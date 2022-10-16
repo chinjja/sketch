@@ -58,6 +58,22 @@ void main() {
     );
   });
 
+  blocTest<SketchCubit, SketchState>(
+    'emits [] when undo is called.',
+    build: () => bloc,
+    seed: () => SketchState.success(sketch: Sketch(id: '1')),
+    act: (bloc) => bloc.undo(),
+    expect: () => [],
+  );
+
+  blocTest<SketchCubit, SketchState>(
+    'emits [] when redo is called.',
+    build: () => bloc,
+    seed: () => SketchState.success(sketch: Sketch(id: '1')),
+    act: (bloc) => bloc.redo(),
+    expect: () => [],
+  );
+
   group('sketch save', () {
     setUp(() {
       when(() => repository.save(any())).thenAnswer((_) async => _FakeSketch());
@@ -184,6 +200,54 @@ void main() {
       act: (bloc) => bloc.setTitle('test'),
       expect: () => [
         SketchState.success(sketch: Sketch(id: '1', title: 'test')),
+      ],
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when undo is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        sketch: Sketch(
+          id: '1',
+          lines: [
+            SketchLine(),
+          ],
+        ),
+      ),
+      act: (bloc) => bloc.undo(),
+      expect: () => [
+        SketchState.success(
+          sketch: Sketch(
+            id: '1',
+          ),
+          redoList: [
+            SketchLine(),
+          ],
+        ),
+      ],
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when redo is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        redoList: [
+          SketchLine(),
+        ],
+        sketch: Sketch(
+          id: '1',
+        ),
+      ),
+      act: (bloc) => bloc.redo(),
+      expect: () => [
+        SketchState.success(
+          sketch: Sketch(
+            id: '1',
+            lines: [
+              SketchLine(),
+            ],
+          ),
+        ),
       ],
     );
   });

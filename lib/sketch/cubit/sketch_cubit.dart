@@ -20,6 +20,47 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
+  void undo() {
+    state.mapOrNull(
+      success: (e) {
+        final sketch = e.sketch;
+        if (sketch.lines.isEmpty) return;
+
+        final line = sketch.lines.last;
+        final copy = e.copyWith(
+          redoList: [...e.redoList, line],
+          sketch: sketch.copyWith(
+            lines: sketch.lines.sublist(
+              0,
+              sketch.lines.length - 1,
+            ),
+          ),
+        );
+        emit(copy);
+        _repo.save(copy.sketch);
+      },
+    );
+  }
+
+  void redo() {
+    state.mapOrNull(
+      success: (e) {
+        final sketch = e.sketch;
+        if (e.redoList.isEmpty) return;
+
+        final line = e.redoList.last;
+        final copy = e.copyWith(
+          redoList: e.redoList.sublist(0, e.redoList.length - 1),
+          sketch: sketch.copyWith(
+            lines: [...sketch.lines, line],
+          ),
+        );
+        emit(copy);
+        _repo.save(copy.sketch);
+      },
+    );
+  }
+
   void begin(
     Offset point,
     Size size,

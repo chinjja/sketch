@@ -115,6 +115,48 @@ void main() {
       verify(() => bloc.begin(any(), any())).called(1);
       verify(() => bloc.end()).called(1);
     });
+
+    testWidgets('undo()', (tester) async {
+      await tester.pumpApp(bloc);
+      await tester.tap(find.byIcon(Icons.undo));
+
+      verifyNever(() => bloc.undo());
+    });
+
+    testWidgets('redo()', (tester) async {
+      await tester.pumpApp(bloc);
+      await tester.tap(find.byIcon(Icons.redo));
+
+      verifyNever(() => bloc.redo());
+    });
+
+    testWidgets('undo2()', (tester) async {
+      when(() => bloc.state).thenReturn(
+        SketchState.success(
+          sketch: Sketch(
+            id: '1',
+            lines: [SketchLine()],
+          ),
+        ),
+      );
+      await tester.pumpApp(bloc);
+      await tester.tap(find.byIcon(Icons.undo));
+
+      verify(() => bloc.undo()).called(1);
+    });
+
+    testWidgets('redo2()', (tester) async {
+      when(() => bloc.state).thenReturn(
+        SketchState.success(
+          redoList: [SketchLine()],
+          sketch: Sketch(id: '1'),
+        ),
+      );
+      await tester.pumpApp(bloc);
+      await tester.tap(find.byIcon(Icons.redo));
+
+      verify(() => bloc.redo()).called(1);
+    });
   });
 }
 

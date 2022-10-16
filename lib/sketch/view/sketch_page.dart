@@ -36,6 +36,8 @@ class SketchView extends StatelessWidget {
       appBar: AppBar(
         title: const SketchTitle(),
         actions: [
+          const UndoButton(),
+          const RedoButton(),
           IconButton(
             onPressed: () {
               context.read<SketchCubit>().delete();
@@ -57,6 +59,50 @@ class SketchView extends StatelessWidget {
           SketchControlView(),
         ],
       ),
+    );
+  }
+}
+
+class UndoButton extends StatelessWidget {
+  const UndoButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SketchCubit, SketchState>(
+      builder: (context, state) {
+        return IconButton(
+          onPressed: state.mapOrNull(
+            success: (e) => e.canUndo
+                ? () {
+                    context.read<SketchCubit>().undo();
+                  }
+                : null,
+          ),
+          icon: const Icon(Icons.undo),
+        );
+      },
+    );
+  }
+}
+
+class RedoButton extends StatelessWidget {
+  const RedoButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SketchCubit, SketchState>(
+      builder: (context, state) {
+        return IconButton(
+          onPressed: state.mapOrNull(
+            success: (e) => e.canRedo
+                ? () {
+                    context.read<SketchCubit>().redo();
+                  }
+                : null,
+          ),
+          icon: const Icon(Icons.redo),
+        );
+      },
     );
   }
 }
