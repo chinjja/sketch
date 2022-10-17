@@ -7,11 +7,17 @@ part 'sketch_state.dart';
 part 'sketch_cubit.freezed.dart';
 
 class SketchCubit extends Cubit<SketchState> {
-  final SketchRepository _repo;
+  SketchRepository? _repopository;
+  SketchRepository get _repo => _repopository!;
 
-  SketchCubit(this._repo) : super(const SketchState.initial());
+  SketchCubit() : super(const SketchState.initial());
 
-  void init(Sketch sketch) {
+  void started(SketchRepository repository) {
+    assert(_repopository == null);
+    _repopository = repository;
+  }
+
+  void sketch(Sketch sketch) {
     emit(
       state.maybeMap(
         success: (e) => e.copyWith(sketch: sketch),
@@ -20,9 +26,9 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
-  void undo() {
-    state.mapOrNull(
-      success: (e) {
+  void undo() async {
+    await state.mapOrNull(
+      success: (e) async {
         final sketch = e.sketch;
         if (sketch.lines.isEmpty) return;
 
@@ -37,14 +43,14 @@ class SketchCubit extends Cubit<SketchState> {
           ),
         );
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
 
-  void redo() {
-    state.mapOrNull(
-      success: (e) {
+  void redo() async {
+    await state.mapOrNull(
+      success: (e) async {
         final sketch = e.sketch;
         if (e.redoList.isEmpty) return;
 
@@ -56,7 +62,7 @@ class SketchCubit extends Cubit<SketchState> {
           ),
         );
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
@@ -64,9 +70,9 @@ class SketchCubit extends Cubit<SketchState> {
   void begin(
     Offset point,
     Size size,
-  ) {
-    state.mapOrNull(
-      success: (e) {
+  ) async {
+    await state.mapOrNull(
+      success: (e) async {
         final sketch = e.sketch;
         final line = SketchLine(
           points: [_scaled(point, size)],
@@ -76,7 +82,7 @@ class SketchCubit extends Cubit<SketchState> {
         final copy = e.copyWith.sketch(lines: [...sketch.lines, line]);
         emit(copy);
 
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
@@ -84,9 +90,9 @@ class SketchCubit extends Cubit<SketchState> {
   void append(
     Offset point,
     Size size,
-  ) {
-    state.mapOrNull(
-      success: (e) {
+  ) async {
+    await state.mapOrNull(
+      success: (e) async {
         final sketch = e.sketch;
         final lines = [...sketch.lines];
         lines.last = lines.last.copyWith(
@@ -98,7 +104,7 @@ class SketchCubit extends Cubit<SketchState> {
         final copy = e.copyWith.sketch(lines: lines);
         emit(copy);
 
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
@@ -114,18 +120,18 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
-  void clear() {
-    state.mapOrNull(
-      success: (e) {
+  void clear() async {
+    await state.mapOrNull(
+      success: (e) async {
         final copy = e.copyWith.sketch(lines: const []);
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
 
-  void delete() {
-    state.mapOrNull(
+  void delete() async {
+    await state.mapOrNull(
       success: (e) async {
         await _repo.delete(e.sketch);
         emit(SketchState.deleted(sketch: e.sketch));
@@ -133,32 +139,32 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
-  void setColor(Color color) {
-    state.mapOrNull(
-      success: (e) {
+  void setColor(Color color) async {
+    await state.mapOrNull(
+      success: (e) async {
         final copy = e.copyWith.sketch(color: color);
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
 
-  void setStrokeWidth(double strokeWidth) {
-    state.mapOrNull(
-      success: (e) {
+  void setStrokeWidth(double strokeWidth) async {
+    await state.mapOrNull(
+      success: (e) async {
         final copy = e.copyWith.sketch(strokeWidth: strokeWidth);
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }
 
-  void setTitle(String title) {
-    state.mapOrNull(
-      success: (e) {
+  void setTitle(String title) async {
+    await state.mapOrNull(
+      success: (e) async {
         final copy = e.copyWith.sketch(title: title);
         emit(copy);
-        _repo.save(copy.sketch);
+        await _repo.save(copy.sketch);
       },
     );
   }

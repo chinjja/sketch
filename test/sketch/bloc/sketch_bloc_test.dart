@@ -21,8 +21,15 @@ void main() {
 
   setUp(() {
     repository = _MockSketchRepository();
-    bloc = SketchCubit(repository);
+    bloc = SketchCubit();
   });
+
+  blocTest<SketchCubit, SketchState>(
+    'emits [] when started() ia called.',
+    build: () => bloc,
+    act: (bloc) => bloc.started(repository),
+    expect: () => [],
+  );
 
   test('initial state', () {
     expect(bloc.state, SketchState.initial());
@@ -32,6 +39,7 @@ void main() {
     late Sketch sketch;
     setUp(() {
       sketch = Sketch(id: '1');
+      bloc.started(repository);
     });
 
     blocTest<SketchCubit, SketchState>(
@@ -49,9 +57,9 @@ void main() {
     );
 
     blocTest<SketchCubit, SketchState>(
-      'emits [success] when init() is called.',
+      'emits [success] when sketch() is called.',
       build: () => bloc,
-      act: (bloc) => bloc.init(sketch),
+      act: (bloc) => bloc.sketch(sketch),
       expect: () => [
         SketchState.success(sketch: sketch),
       ],
@@ -77,6 +85,7 @@ void main() {
   group('sketch save', () {
     setUp(() {
       when(() => repository.save(any())).thenAnswer((_) async => _FakeSketch());
+      bloc.started(repository);
     });
 
     tearDown(() {
@@ -255,6 +264,7 @@ void main() {
   group('sketch delete', () {
     setUp(() {
       when(() => repository.delete(any())).thenAnswer((_) async => {});
+      bloc.started(repository);
     });
 
     tearDown(() {

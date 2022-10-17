@@ -13,8 +13,9 @@ class SketchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          SketchCubit(context.read<SketchRepository>())..init(sketch),
+      create: (context) => SketchCubit()
+        ..started(context.read<SketchRepository>())
+        ..sketch(sketch),
       child: BlocListener<SketchCubit, SketchState>(
         listener: (context, state) {
           state.mapOrNull(deleted: (e) {
