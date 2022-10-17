@@ -10,7 +10,8 @@ class SketchListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SketchListCubit(context.read<SketchRepository>()),
+      create: (context) =>
+          SketchListCubit()..started(context.read<SketchRepository>()),
       child: BlocListener<SketchListCubit, SketchListState>(
         listener: (context, state) {
           state.mapOrNull(created: (e) {

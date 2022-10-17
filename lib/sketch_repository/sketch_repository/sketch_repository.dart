@@ -6,7 +6,7 @@ import '../sketch_repository.dart';
 class SketchRepository {
   final _sketches = BehaviorSubject.seeded(const <Sketch>[]);
 
-  late final onSketches = _sketches.stream;
+  late final Stream<List<Sketch>> onSketches = _sketches.stream;
 
   Future<Sketch> create({String? id, required String name}) async {
     final list = await _sketches.first;
