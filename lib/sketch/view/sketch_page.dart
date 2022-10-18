@@ -251,15 +251,8 @@ class SketchControlView extends StatelessWidget {
   }
 }
 
-class SketchColorPicker extends StatefulWidget {
+class SketchColorPicker extends StatelessWidget {
   const SketchColorPicker({super.key});
-
-  @override
-  State<SketchColorPicker> createState() => _SketchColorPickerState();
-}
-
-class _SketchColorPickerState extends State<SketchColorPicker> {
-  Color? _selectedColor;
 
   @override
   Widget build(BuildContext context) {
@@ -267,8 +260,9 @@ class _SketchColorPickerState extends State<SketchColorPicker> {
       builder: (context, state) => state.maybeMap(
         success: (e) {
           return GestureDetector(
-            onTap: () async {
-              final color = await showDialog<Color>(
+            onTap: () {
+              final bloc = context.read<SketchCubit>();
+              showDialog<Color>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Pick a color!'),
@@ -276,23 +270,13 @@ class _SketchColorPickerState extends State<SketchColorPicker> {
                     child: BlockPicker(
                       pickerColor: e.sketch.color,
                       onColorChanged: (color) {
-                        _selectedColor = color;
+                        bloc.setColor(color);
+                        Navigator.of(context).pop(color);
                       },
                     ),
                   ),
-                  actions: [
-                    ElevatedButton(
-                      child: const Text('Got it'),
-                      onPressed: () {
-                        Navigator.of(context).pop(_selectedColor);
-                      },
-                    ),
-                  ],
                 ),
               );
-              if (color != null && mounted) {
-                context.read<SketchCubit>().setColor(color);
-              }
             },
             child: Container(
               width: 60,
