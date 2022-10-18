@@ -9,12 +9,16 @@ part 'sketch.g.dart';
 @freezed
 class Sketch with _$Sketch {
   @ColorConverter()
+  @OffsetConverter()
+  @SizeConverter()
   const factory Sketch({
     required String id,
     @Default('') String title,
     @Default([]) List<SketchLine> lines,
     @Default(Colors.black) Color color,
     @Default(5.0) double strokeWidth,
+    @Default(Offset.zero) Offset offset,
+    @Default(Size(1, 1)) Size size,
   }) = _Sketch;
 
   factory Sketch.fromJson(Map<String, dynamic> json) => _$SketchFromJson(json);

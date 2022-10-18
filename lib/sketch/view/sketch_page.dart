@@ -50,12 +50,7 @@ class SketchView extends StatelessWidget {
       body: Column(
         children: const [
           Expanded(
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: 1.0,
-                child: SketchPaintView(),
-              ),
-            ),
+            child: SketchPaintView(),
           ),
           SketchControlView(),
         ],
@@ -140,26 +135,21 @@ class SketchPaintView extends StatelessWidget {
       builder: (context, state) {
         return state.maybeMap(
           success: (e) => LayoutBuilder(builder: (context, constraints) {
-            return Transform(
-              transform: Matrix4.diagonal3Values(1, 1, 1),
-              child: GestureDetector(
-                onPanStart: (details) {
-                  context
-                      .read<SketchCubit>()
-                      .begin(details.localPosition, constraints.biggest);
-                },
-                onPanUpdate: (details) {
-                  context
-                      .read<SketchCubit>()
-                      .append(details.localPosition, constraints.biggest);
-                },
-                onPanEnd: (details) {
-                  context.read<SketchCubit>().end();
-                },
-                child: SketchCanvasView(
-                  sketch: e.sketch,
-                  activeLine: e.activeLine,
-                ),
+            return GestureDetector(
+              onPanStart: (details) {
+                context
+                    .read<SketchCubit>()
+                    .begin(details.localPosition, constraints.biggest);
+              },
+              onPanUpdate: (details) {
+                context.read<SketchCubit>().append(details.localPosition);
+              },
+              onPanEnd: (details) {
+                context.read<SketchCubit>().end();
+              },
+              child: SketchCanvasView(
+                sketch: e.sketch,
+                activeLine: e.activeLine,
               ),
             );
           }),
@@ -173,30 +163,29 @@ class SketchPaintView extends StatelessWidget {
 class SketchCanvasView extends StatelessWidget {
   final Sketch sketch;
   final SketchLine? activeLine;
+  final Rect? clip;
   const SketchCanvasView({
     super.key,
     required this.sketch,
     this.activeLine,
+    this.clip,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          color: Colors.white,
-        ),
         RepaintBoundary(
           child: CustomPaint(
             isComplex: true,
             size: Size.infinite,
-            painter: SketchPainter(sketch.lines),
+            painter: SketchPainter(sketch.lines, clip),
           ),
         ),
         if (activeLine != null)
           CustomPaint(
             size: Size.infinite,
-            painter: SketchPainter([activeLine!]),
+            painter: SketchPainter([activeLine!], clip),
           ),
       ],
     );
@@ -204,20 +193,24 @@ class SketchCanvasView extends StatelessWidget {
 }
 
 class SketchPainter extends CustomPainter {
+  final Rect? clip;
   final List<SketchLine> sketches;
 
-  const SketchPainter(this.sketches);
+  const SketchPainter(this.sketches, [this.clip]);
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.scale(size.width, size.height);
+    if (clip != null) {
+      canvas.clipRect(clip!);
+    } else {
+      canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    }
 
     final paint = Paint();
     for (final sketch in sketches) {
       paint
         ..color = sketch.color
-        ..strokeWidth = sketch.strokeWidth / 100
+        ..strokeWidth = sketch.strokeWidth
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       canvas.drawPoints(PointMode.polygon, sketch.points, paint);
@@ -302,7 +295,7 @@ class StrokeWidthSlider extends StatelessWidget {
       builder: (context, state) => state.maybeMap(
         success: (e) => Slider(
           min: 1,
-          max: 20,
+          max: 100,
           value: e.sketch.strokeWidth,
           onChanged: (value) =>
               context.read<SketchCubit>().setStrokeWidth(value),

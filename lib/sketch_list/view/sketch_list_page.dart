@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sketch/sketch/view/view.dart';
@@ -61,7 +63,10 @@ class SketchItemListView extends StatelessWidget {
                   itemCount: e.sketches.length,
                   itemBuilder: (context, index) {
                     final sketch = e.sketches[index];
-                    return SketchItemView(sketch: sketch);
+                    return SketchItemView(
+                      key: Key(sketch.id),
+                      sketch: sketch,
+                    );
                   },
                 ),
           orElse: () => const CircularProgressIndicator(),
@@ -77,13 +82,33 @@ class SketchItemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mat = Matrix4.identity()
+      ..scale(60 / max(sketch.size.width, sketch.size.height));
     return ListTile(
-      leading: SizedBox(
-        width: 40,
-        height: 40,
-        child: SketchCanvasView(sketch: sketch),
+      visualDensity: const VisualDensity(vertical: 3),
+      leading: Container(
+        color: Colors.white,
+        width: 60,
+        height: 60,
+        child: Transform(
+          transform: mat,
+          child: SketchCanvasView(
+            sketch: sketch,
+            clip: Rect.fromLTWH(
+              0,
+              0,
+              sketch.size.width,
+              sketch.size.height,
+            ),
+          ),
+        ),
       ),
-      title: Text(sketch.title),
+      title: sketch.title.isEmpty
+          ? Text(
+              '제목 없음',
+              style: TextStyle(color: Colors.grey.shade600),
+            )
+          : Text(sketch.title),
       onTap: () {
         Navigator.push(
           context,

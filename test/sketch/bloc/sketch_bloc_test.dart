@@ -45,14 +45,14 @@ void main() {
     blocTest<SketchCubit, SketchState>(
       'emits [] when begin() ia called.',
       build: () => bloc,
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(1, 1)),
+      act: (bloc) => bloc.begin(Offset(0, 0), Size(100, 100)),
       expect: () => [],
     );
 
     blocTest<SketchCubit, SketchState>(
       'emits [] when append() is called.',
       build: () => bloc,
-      act: (bloc) => bloc.append(Offset(0, 0), Size(1, 1)),
+      act: (bloc) => bloc.append(Offset(0, 0)),
       expect: () => [],
     );
 
@@ -94,7 +94,7 @@ void main() {
       'emits [success] when begin() ia called.',
       build: () => bloc,
       seed: () => SketchState.success(sketch: Sketch(id: '1')),
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(1, 1)),
+      act: (bloc) => bloc.begin(Offset(0, 0), Size(100, 100)),
       expect: () => [
         SketchState.success(
           activeLine: SketchLine(
@@ -102,7 +102,7 @@ void main() {
             strokeWidth: 5.0,
             points: [Offset(0, 0)],
           ),
-          sketch: Sketch(id: '1'),
+          sketch: Sketch(id: '1', size: Size(100, 100)),
         ),
       ],
     );
@@ -116,7 +116,7 @@ void main() {
           lines: [],
         ),
       ),
-      act: (bloc) => bloc.append(Offset(1, 0), Size(1, 1)),
+      act: (bloc) => bloc.append(Offset(1, 0)),
       expect: () => [],
     );
     blocTest<SketchCubit, SketchState>(
@@ -126,7 +126,7 @@ void main() {
         activeLine: SketchLine(),
         sketch: Sketch(id: '1'),
       ),
-      act: (bloc) => bloc.append(Offset(1, 0), Size(1, 1)),
+      act: (bloc) => bloc.append(Offset(1, 0)),
       expect: () => [
         SketchState.success(
           activeLine: SketchLine(

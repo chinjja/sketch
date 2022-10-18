@@ -26,6 +26,14 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
+  void offset(Offset offset) async {
+    await state.mapOrNull(
+      success: (e) async {
+        emit(e.copyWith.sketch(offset: offset));
+      },
+    );
+  }
+
   void undo() async {
     await state.mapOrNull(
       success: (e) async {
@@ -67,29 +75,24 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
-  void begin(
-    Offset point,
-    Size size,
-  ) async {
+  void begin(Offset point, Size size) async {
     await state.mapOrNull(
       success: (e) async {
         final sketch = e.sketch;
         final copy = e.copyWith(
           activeLine: SketchLine(
-            points: [_scaled(point, size)],
+            points: [point],
             color: sketch.color,
             strokeWidth: sketch.strokeWidth,
           ),
+          sketch: sketch.copyWith(size: size),
         );
         emit(copy);
       },
     );
   }
 
-  void append(
-    Offset point,
-    Size size,
-  ) async {
+  void append(Offset point) async {
     await state.mapOrNull(
       success: (e) async {
         final line = e.activeLine;
@@ -99,7 +102,7 @@ class SketchCubit extends Cubit<SketchState> {
           activeLine: line.copyWith(
             points: [
               ...line.points,
-              _scaled(point, size),
+              point,
             ],
           ),
         );
@@ -180,9 +183,5 @@ class SketchCubit extends Cubit<SketchState> {
         await _repo.save(copy.sketch);
       },
     );
-  }
-
-  Offset _scaled(Offset point, Size size) {
-    return point.scale(1.0 / size.width, 1.0 / size.height);
   }
 }
