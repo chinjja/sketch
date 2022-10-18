@@ -186,19 +186,17 @@ class SketchCanvasView extends StatelessWidget {
         Container(
           color: Colors.white,
         ),
-        ...sketch.lines.map(
-          (line) => Positioned.fill(
-            child: RepaintBoundary(
-              child: CustomPaint(
-                painter: SketchPainter(line),
-              ),
-            ),
+        RepaintBoundary(
+          child: CustomPaint(
+            isComplex: true,
+            size: Size.infinite,
+            painter: SketchPainter(sketch.lines),
           ),
         ),
         if (activeLine != null)
           CustomPaint(
             size: Size.infinite,
-            painter: SketchPainter(activeLine!),
+            painter: SketchPainter([activeLine!]),
           ),
       ],
     );
@@ -206,25 +204,29 @@ class SketchCanvasView extends StatelessWidget {
 }
 
 class SketchPainter extends CustomPainter {
-  final SketchLine sketch;
+  final List<SketchLine> sketches;
 
-  const SketchPainter(this.sketch);
+  const SketchPainter(this.sketches);
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.scale(size.width, size.height);
-    final paint = Paint()
-      ..color = sketch.color
-      ..strokeWidth = sketch.strokeWidth / 100
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPoints(PointMode.polygon, sketch.points, paint);
+
+    final paint = Paint();
+    for (final sketch in sketches) {
+      paint
+        ..color = sketch.color
+        ..strokeWidth = sketch.strokeWidth / 100
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPoints(PointMode.polygon, sketch.points, paint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant SketchPainter oldDelegate) {
-    return sketch != oldDelegate.sketch;
+    return sketches != oldDelegate.sketches;
   }
 }
 
