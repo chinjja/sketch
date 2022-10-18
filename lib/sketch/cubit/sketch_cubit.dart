@@ -74,15 +74,14 @@ class SketchCubit extends Cubit<SketchState> {
     await state.mapOrNull(
       success: (e) async {
         final sketch = e.sketch;
-        final line = SketchLine(
-          points: [_scaled(point, size)],
-          color: sketch.color,
-          strokeWidth: sketch.strokeWidth,
+        final copy = e.copyWith(
+          activeLine: SketchLine(
+            points: [_scaled(point, size)],
+            color: sketch.color,
+            strokeWidth: sketch.strokeWidth,
+          ),
         );
-        final copy = e.copyWith.sketch(lines: [...sketch.lines, line]);
         emit(copy);
-
-        await _repo.save(copy.sketch);
       },
     );
   }
@@ -93,29 +92,39 @@ class SketchCubit extends Cubit<SketchState> {
   ) async {
     await state.mapOrNull(
       success: (e) async {
-        final sketch = e.sketch;
-        final lines = [...sketch.lines];
-        lines.last = lines.last.copyWith(
-          points: [
-            ...lines.last.points,
-            _scaled(point, size),
-          ],
-        );
-        final copy = e.copyWith.sketch(lines: lines);
-        emit(copy);
+        final line = e.activeLine;
+        if (line == null) return;
 
-        await _repo.save(copy.sketch);
+        final copy = e.copyWith(
+          activeLine: line.copyWith(
+            points: [
+              ...line.points,
+              _scaled(point, size),
+            ],
+          ),
+        );
+        emit(copy);
       },
     );
   }
 
-  void end() {
-    state.mapOrNull(
-      success: (e) {
-        final sketch = e.sketch;
-        if (sketch.lines.last.points.length == 1) {
-          append(sketch.lines.last.points[0], const Size(1, 1));
+  void end() async {
+    await state.mapOrNull(
+      success: (e) async {
+        var line = e.activeLine;
+        if (line == null) return;
+
+        if (line.points.length == 1) {
+          line = line.copyWith(points: [...line.points, line.points.first]);
         }
+
+        final sketch = e.sketch;
+        final copy = e.copyWith(
+          sketch: sketch.copyWith(lines: [...sketch.lines, line]),
+          activeLine: null,
+        );
+        emit(copy);
+        await _repo.save(copy.sketch);
       },
     );
   }
@@ -123,7 +132,11 @@ class SketchCubit extends Cubit<SketchState> {
   void clear() async {
     await state.mapOrNull(
       success: (e) async {
-        final copy = e.copyWith.sketch(lines: const []);
+        final sketch = e.sketch;
+        final copy = e.copyWith(
+          sketch: sketch.copyWith(lines: const []),
+          activeLine: null,
+        );
         emit(copy);
         await _repo.save(copy.sketch);
       },

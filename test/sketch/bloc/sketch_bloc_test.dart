@@ -82,6 +82,74 @@ void main() {
     expect: () => [],
   );
 
+  group('sketch never save', () {
+    setUp(() {
+      bloc.started(repository);
+    });
+
+    tearDown(() {
+      verifyNever(() => repository.save(any()));
+    });
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when begin() ia called.',
+      build: () => bloc,
+      seed: () => SketchState.success(sketch: Sketch(id: '1')),
+      act: (bloc) => bloc.begin(Offset(0, 0), Size(1, 1)),
+      expect: () => [
+        SketchState.success(
+          activeLine: SketchLine(
+            color: Colors.black,
+            strokeWidth: 5.0,
+            points: [Offset(0, 0)],
+          ),
+          sketch: Sketch(id: '1'),
+        ),
+      ],
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [] when append() is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        sketch: Sketch(
+          id: '1',
+          lines: [],
+        ),
+      ),
+      act: (bloc) => bloc.append(Offset(1, 0), Size(1, 1)),
+      expect: () => [],
+    );
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when append() is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        activeLine: SketchLine(),
+        sketch: Sketch(id: '1'),
+      ),
+      act: (bloc) => bloc.append(Offset(1, 0), Size(1, 1)),
+      expect: () => [
+        SketchState.success(
+          activeLine: SketchLine(
+            color: Colors.black,
+            strokeWidth: 5.0,
+            points: [Offset(1, 0)],
+          ),
+          sketch: Sketch(id: '1'),
+        ),
+      ],
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [] when end() is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        sketch: Sketch(id: '1'),
+      ),
+      act: (bloc) => bloc.end(),
+      expect: () => [],
+    );
+  });
+
   group('sketch save', () {
     setUp(() {
       when(() => repository.save(any())).thenAnswer((_) async => _FakeSketch());
@@ -91,85 +159,6 @@ void main() {
     tearDown(() {
       verify(() => repository.save(any())).called(1);
     });
-
-    blocTest<SketchCubit, SketchState>(
-      'emits [success] when begin() ia called.',
-      build: () => bloc,
-      seed: () => SketchState.success(sketch: Sketch(id: '1')),
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(1, 1)),
-      expect: () => [
-        SketchState.success(
-            sketch: Sketch(
-          id: '1',
-          color: Colors.black,
-          strokeWidth: 5.0,
-          lines: [
-            SketchLine(
-              color: Colors.black,
-              strokeWidth: 5.0,
-              points: [Offset(0, 0)],
-            ),
-          ],
-        )),
-      ],
-    );
-
-    blocTest<SketchCubit, SketchState>(
-      'emits [success] when begin() ia called. with orange, 2.5',
-      build: () => bloc,
-      seed: () => SketchState.success(
-        sketch: Sketch(
-          id: '1',
-          color: Colors.orange,
-          strokeWidth: 2.5,
-        ),
-      ),
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(1, 1)),
-      expect: () => [
-        SketchState.success(
-            sketch: Sketch(
-          id: '1',
-          color: Colors.orange,
-          strokeWidth: 2.5,
-          lines: [
-            SketchLine(
-              color: Colors.orange,
-              strokeWidth: 2.5,
-              points: [Offset(0, 0)],
-            ),
-          ],
-        )),
-      ],
-    );
-
-    blocTest<SketchCubit, SketchState>(
-      'emits [success] when append() is called.',
-      build: () => bloc,
-      seed: () => SketchState.success(
-        sketch: Sketch(
-          id: '1',
-          lines: [
-            SketchLine(),
-          ],
-        ),
-      ),
-      act: (bloc) => bloc.append(Offset(1, 0), Size(1, 1)),
-      expect: () => [
-        SketchState.success(
-            sketch: Sketch(
-          id: '1',
-          color: Colors.black,
-          strokeWidth: 5.0,
-          lines: [
-            SketchLine(
-              color: Colors.black,
-              strokeWidth: 5.0,
-              points: [Offset(1, 0)],
-            ),
-          ],
-        )),
-      ],
-    );
 
     blocTest<SketchCubit, SketchState>(
       'emits [success] when clear() is called.',
@@ -254,6 +243,51 @@ void main() {
             id: '1',
             lines: [
               SketchLine(),
+            ],
+          ),
+        ),
+      ],
+    );
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when end() is called. line has a point',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        activeLine: SketchLine(points: [Offset.zero]),
+        sketch: Sketch(id: '1'),
+      ),
+      act: (bloc) => bloc.end(),
+      expect: () => [
+        SketchState.success(
+          sketch: Sketch(
+            id: '1',
+            lines: [
+              SketchLine(points: [
+                Offset.zero,
+                Offset.zero,
+              ])
+            ],
+          ),
+        ),
+      ],
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when end() is called. line have points greater than one',
+      build: () => bloc,
+      seed: () => SketchState.success(
+        activeLine: SketchLine(points: [Offset.zero, Offset.zero]),
+        sketch: Sketch(id: '1'),
+      ),
+      act: (bloc) => bloc.end(),
+      expect: () => [
+        SketchState.success(
+          sketch: Sketch(
+            id: '1',
+            lines: [
+              SketchLine(points: [
+                Offset.zero,
+                Offset.zero,
+              ])
             ],
           ),
         ),

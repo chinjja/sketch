@@ -156,7 +156,10 @@ class SketchPaintView extends StatelessWidget {
                 onPanEnd: (details) {
                   context.read<SketchCubit>().end();
                 },
-                child: SketchCanvasView(sketch: e.sketch),
+                child: SketchCanvasView(
+                  sketch: e.sketch,
+                  activeLine: e.activeLine,
+                ),
               ),
             );
           }),
@@ -169,7 +172,12 @@ class SketchPaintView extends StatelessWidget {
 
 class SketchCanvasView extends StatelessWidget {
   final Sketch sketch;
-  const SketchCanvasView({super.key, required this.sketch});
+  final SketchLine? activeLine;
+  const SketchCanvasView({
+    super.key,
+    required this.sketch,
+    this.activeLine,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,11 +188,18 @@ class SketchCanvasView extends StatelessWidget {
         ),
         ...sketch.lines.map(
           (line) => Positioned.fill(
-            child: CustomPaint(
-              painter: SketchPainter(line),
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: SketchPainter(line),
+              ),
             ),
           ),
         ),
+        if (activeLine != null)
+          CustomPaint(
+            size: Size.infinite,
+            painter: SketchPainter(activeLine!),
+          ),
       ],
     );
   }

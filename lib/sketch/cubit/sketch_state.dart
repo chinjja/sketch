@@ -5,6 +5,7 @@ class SketchState with _$SketchState {
   const factory SketchState.initial() = _Initial;
   const factory SketchState.success({
     required Sketch sketch,
+    SketchLine? activeLine,
     @Default([]) List<SketchLine> redoList,
   }) = _Success;
   const factory SketchState.deleted({
