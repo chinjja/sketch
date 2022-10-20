@@ -10,9 +10,12 @@ class SketchRepository {
 
   Future<Sketch> create({String? id, required String name}) async {
     final list = await _sketches.first;
+    final layer = SketchLayer(id: const Uuid().v4());
     final sketch = Sketch(
       id: id ?? const Uuid().v4(),
       title: name,
+      activeLayerId: layer.id,
+      layers: [layer],
     );
     _sketches.add([...list, sketch]);
     return sketch;

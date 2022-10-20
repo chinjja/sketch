@@ -36,7 +36,7 @@ void main() {
     testWidgets('when success([#sketch1]) then show empty message',
         (tester) async {
       when(() => bloc.state).thenReturn(SketchListState.success(sketches: [
-        Sketch(id: '1', title: '#sketch1'),
+        Sketch.create('1', title: '#sketch1'),
       ]));
       await tester.pumpApp(bloc);
 
@@ -56,7 +56,7 @@ void main() {
     });
 
     testWidgets('tap delete button', (tester) async {
-      final sketch = Sketch(id: '1', title: '#sketch1');
+      final sketch = Sketch.create('1', title: '#sketch1');
       when(() => bloc.state).thenReturn(SketchListState.success(sketches: [
         sketch,
       ]));

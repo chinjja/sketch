@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ class SketchView extends StatelessWidget {
             },
             icon: const Icon(Icons.delete),
           ),
+          const OpenLayerButton(),
         ],
       ),
       body: Column(
@@ -55,6 +57,133 @@ class SketchView extends StatelessWidget {
           SketchControlView(),
         ],
       ),
+      endDrawer: const Drawer(
+        child: SketchLayerDrawer(),
+      ),
+    );
+  }
+}
+
+class OpenLayerButton extends StatelessWidget {
+  const OpenLayerButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SketchCubit, SketchState>(
+      builder: (context, state) {
+        return state.maybeMap(
+          success: (e) => TextButton.icon(
+            onPressed: () {
+              final state = Scaffold.of(context);
+              if (state.isEndDrawerOpen) {
+                state.closeEndDrawer();
+              } else {
+                state.openEndDrawer();
+              }
+            },
+            icon: const Icon(Icons.list),
+            label: Text(e.sketch.activeLayer.title),
+          ),
+          orElse: () => const CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+}
+
+class SketchLayerDrawer extends StatelessWidget {
+  const SketchLayerDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SketchCubit, SketchState>(
+      builder: (context, state) {
+        return state.maybeMap(
+          success: (e) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Layer'),
+                  onPressed: () {
+                    context.read<SketchCubit>().addLayer();
+                  },
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: e.sketch.layers.length,
+                  itemBuilder: (context, index) {
+                    final layer = e.sketch.layers[index];
+                    return SketchLayerItemView(
+                      sketch: e.sketch,
+                      layer: layer,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          orElse: () => const CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+}
+
+class SketchLayerItemView extends StatelessWidget {
+  final Sketch sketch;
+  final SketchLayer layer;
+  const SketchLayerItemView({
+    super.key,
+    required this.sketch,
+    required this.layer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = sketch.activeLayerId == layer.id;
+    return ListTile(
+      visualDensity: const VisualDensity(vertical: 3),
+      selectedTileColor: Colors.grey.shade200,
+      selected: selected,
+      leading: SketchLayerThumbnailView(
+        layer: layer,
+        sketch: sketch,
+        size: 60,
+      ),
+      title: Row(
+        children: [
+          layer.visible
+              ? const Icon(Icons.visibility)
+              : const Icon(Icons.visibility_off),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextFormField(
+              initialValue: layer.title,
+              decoration: const InputDecoration(
+                hintText: '제목 없음',
+                border: InputBorder.none,
+              ),
+              onChanged: (value) {
+                context.read<SketchCubit>().updateLayerTitle(layer, value);
+              },
+            ),
+          ),
+        ],
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete),
+        onPressed: selected
+            ? null
+            : () {
+                context.read<SketchCubit>().deleteLayer(layer);
+              },
+      ),
+      onTap: () {
+        context.read<SketchCubit>().activeLayer(layer);
+      },
     );
   }
 }
@@ -175,19 +304,36 @@ class SketchCanvasView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        RepaintBoundary(
-          child: CustomPaint(
-            isComplex: true,
-            size: Size.infinite,
-            painter: SketchPainter(sketch.lines, clip),
-          ),
-        ),
-        if (activeLine != null)
-          CustomPaint(
-            size: Size.infinite,
-            painter: SketchPainter([activeLine!], clip),
-          ),
+        for (final layer in sketch.layers) ...[
+          if (layer.visible) SketchLayerView(layer: layer, clip: clip),
+          if (activeLine != null)
+            CustomPaint(
+              size: Size.infinite,
+              painter: SketchPainter([activeLine!], clip),
+            ),
+        ]
       ],
+    );
+  }
+}
+
+class SketchLayerView extends StatelessWidget {
+  final SketchLayer layer;
+  final Rect? clip;
+  const SketchLayerView({
+    super.key,
+    required this.layer,
+    this.clip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        isComplex: true,
+        size: Size.infinite,
+        painter: SketchPainter(layer.lines, clip),
+      ),
     );
   }
 }
@@ -209,8 +355,8 @@ class SketchPainter extends CustomPainter {
     final paint = Paint();
     for (final sketch in sketches) {
       paint
-        ..color = sketch.color
-        ..strokeWidth = sketch.strokeWidth
+        ..color = sketch.pen.color
+        ..strokeWidth = sketch.pen.strokeWidth
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       canvas.drawPoints(PointMode.polygon, sketch.points, paint);
@@ -263,7 +409,7 @@ class SketchColorPicker extends StatelessWidget {
                   title: const Text('Pick a color!'),
                   content: SingleChildScrollView(
                     child: BlockPicker(
-                      pickerColor: e.sketch.color,
+                      pickerColor: e.sketch.pen.color,
                       onColorChanged: (color) {
                         bloc.setColor(color);
                         Navigator.of(context).pop(color);
@@ -276,7 +422,7 @@ class SketchColorPicker extends StatelessWidget {
             child: Container(
               width: 60,
               height: 60,
-              color: e.sketch.color,
+              color: e.sketch.pen.color,
             ),
           );
         },
@@ -296,7 +442,7 @@ class StrokeWidthSlider extends StatelessWidget {
         success: (e) => Slider(
           min: 1,
           max: 100,
-          value: e.sketch.strokeWidth,
+          value: e.sketch.pen.strokeWidth,
           onChanged: (value) =>
               context.read<SketchCubit>().setStrokeWidth(value),
         ),
@@ -316,6 +462,65 @@ class SketchClearButton extends StatelessWidget {
         context.read<SketchCubit>().clear();
       },
       child: const Text('Clear'),
+    );
+  }
+}
+
+class SketchThumbnailView extends StatelessWidget {
+  final Sketch sketch;
+  final double size;
+
+  const SketchThumbnailView({
+    super.key,
+    required this.sketch,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mat = Matrix4.identity()
+      ..scale(size / max(sketch.viewport.width, sketch.viewport.height));
+    return Container(
+      color: Colors.white,
+      width: size,
+      height: size,
+      child: Transform(
+        transform: mat,
+        child: SketchCanvasView(
+          sketch: sketch,
+          clip: sketch.viewport.toRect(),
+        ),
+      ),
+    );
+  }
+}
+
+class SketchLayerThumbnailView extends StatelessWidget {
+  final Sketch sketch;
+  final SketchLayer layer;
+  final double size;
+  const SketchLayerThumbnailView({
+    super.key,
+    required this.sketch,
+    required this.layer,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mat = Matrix4.identity()
+      ..scale(size / max(sketch.viewport.width, sketch.viewport.height));
+    return Container(
+      color: Colors.white,
+      width: size,
+      height: size,
+      child: Transform(
+        transform: mat,
+        child: SketchLayerView(
+          layer: layer,
+          clip: sketch.viewport.toRect(),
+        ),
+      ),
     );
   }
 }
