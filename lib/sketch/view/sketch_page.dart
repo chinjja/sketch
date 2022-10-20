@@ -306,7 +306,7 @@ class SketchCanvasView extends StatelessWidget {
       children: [
         for (final layer in sketch.layers) ...[
           if (layer.visible) SketchLayerView(layer: layer, clip: clip),
-          if (activeLine != null)
+          if (layer.id == sketch.activeLayerId && activeLine != null)
             CustomPaint(
               size: Size.infinite,
               painter: SketchPainter([activeLine!], clip),
