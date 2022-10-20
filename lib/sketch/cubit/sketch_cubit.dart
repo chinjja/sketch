@@ -73,6 +73,11 @@ class SketchCubit extends Cubit<SketchState> {
   void begin(Offset point, Size size) async {
     await state.mapOrNull(
       success: (e) async {
+        if (e.mode != SketchMode.pen) {
+          _erase(point);
+          return;
+        }
+
         final sketch = e.sketch;
         final copy = e.copyWith(
           activeLine: SketchLine(
@@ -93,6 +98,11 @@ class SketchCubit extends Cubit<SketchState> {
   void append(Offset point) async {
     await state.mapOrNull(
       success: (e) async {
+        if (e.mode != SketchMode.pen) {
+          _erase(point);
+          return;
+        }
+
         final line = e.activeLine;
         if (line == null) return;
 
@@ -149,6 +159,44 @@ class SketchCubit extends Cubit<SketchState> {
           activeLine: null,
         );
         emit(_wrap(copy));
+      },
+    );
+  }
+
+  void mode(SketchMode mode) {
+    state.mapOrNull(
+      success: (e) async {
+        emit(e.copyWith(mode: mode));
+      },
+    );
+  }
+
+  void _erase(Offset point) async {
+    await state.mapOrNull(
+      success: (e) async {
+        final layers = e.sketch.layers.map((layer) {
+          if (layer.id == e.sketch.activeLayerId) {
+            final list = <int>[];
+            for (int i = layer.lines.length - 1; i >= 0; i--) {
+              if (layer.lines[i].isCollide(point)) {
+                list.add(i);
+              }
+            }
+            if (list.isNotEmpty) {
+              final lines = [...layer.lines];
+              for (final i in list) {
+                lines.removeAt(i);
+              }
+              return layer.copyWith(lines: lines);
+            }
+          }
+          return layer;
+        }).toList();
+        final copy = e.copyWith(
+          sketch: e.sketch.copyWith(layers: layers),
+        );
+        emit(_wrap(copy));
+        final res = await _repo.save(copy.sketch);
       },
     );
   }

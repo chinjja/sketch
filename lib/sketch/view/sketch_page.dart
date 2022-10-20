@@ -38,6 +38,14 @@ class SketchView extends StatelessWidget {
       appBar: AppBar(
         title: const SketchTitle(),
         actions: [
+          const SketchModeButton(
+            icon: Icon(Icons.brush),
+            mode: SketchMode.pen,
+          ),
+          const SketchModeButton(
+            icon: Icon(Icons.cleaning_services),
+            mode: SketchMode.eraser,
+          ),
           const UndoButton(),
           const RedoButton(),
           IconButton(
@@ -60,6 +68,31 @@ class SketchView extends StatelessWidget {
       endDrawer: const Drawer(
         child: SketchLayerDrawer(),
       ),
+    );
+  }
+}
+
+class SketchModeButton extends StatelessWidget {
+  final SketchMode mode;
+  final Icon icon;
+  const SketchModeButton({
+    super.key,
+    required this.mode,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SketchCubit, SketchState>(
+      builder: (context, state) {
+        return IconButton(
+          icon: icon,
+          isSelected: state.mapOrNull(
+            success: (e) => e.mode == mode,
+          ),
+          onPressed: () => context.read<SketchCubit>().mode(mode),
+        );
+      },
     );
   }
 }

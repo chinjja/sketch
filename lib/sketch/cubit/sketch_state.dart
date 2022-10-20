@@ -1,5 +1,10 @@
 part of 'sketch_cubit.dart';
 
+enum SketchMode {
+  pen,
+  eraser,
+}
+
 @freezed
 class SketchState with _$SketchState {
   const factory SketchState.initial() = _Initial;
@@ -8,6 +13,7 @@ class SketchState with _$SketchState {
     @Default(false) bool canRedo,
     required Sketch sketch,
     SketchLine? activeLine,
+    @Default(SketchMode.pen) SketchMode mode,
   }) = _Success;
   const factory SketchState.deleted({
     required Sketch sketch,
