@@ -37,24 +37,21 @@ class SketchView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const SketchTitle(),
-        actions: [
-          const SketchModeButton(
+        actions: const [
+          SketchModeButton(
             icon: Icon(Icons.brush),
             mode: SketchMode.pen,
           ),
-          const SketchModeButton(
+          SketchModeButton(
             icon: Icon(Icons.cleaning_services),
             mode: SketchMode.eraser,
           ),
-          const UndoButton(),
-          const RedoButton(),
-          IconButton(
-            onPressed: () {
-              context.read<SketchCubit>().delete();
-            },
-            icon: const Icon(Icons.delete),
-          ),
-          const OpenLayerButton(),
+          VerticalDivider(),
+          UndoButton(),
+          RedoButton(),
+          DeleteButton(),
+          VerticalDivider(),
+          OpenLayerButton(),
         ],
       ),
       body: Column(
@@ -104,22 +101,40 @@ class OpenLayerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SketchCubit, SketchState>(
       builder: (context, state) {
-        return state.maybeMap(
-          success: (e) => TextButton.icon(
-            onPressed: () {
-              final state = Scaffold.of(context);
-              if (state.isEndDrawerOpen) {
-                state.closeEndDrawer();
-              } else {
-                state.openEndDrawer();
-              }
-            },
-            icon: const Icon(Icons.list),
-            label: Text(e.sketch.activeLayer.title),
+        return IconButton(
+          onPressed: () {
+            final state = Scaffold.of(context);
+            if (state.isEndDrawerOpen) {
+              state.closeEndDrawer();
+            } else {
+              state.openEndDrawer();
+            }
+          },
+          icon: Row(
+            children: [
+              Text(
+                  state.mapOrNull(success: (e) => e.sketch.activeLayer.title) ??
+                      ''),
+              const SizedBox(width: 4),
+              const Icon(Icons.layers),
+            ],
           ),
-          orElse: () => const CircularProgressIndicator(),
         );
       },
+    );
+  }
+}
+
+class DeleteButton extends StatelessWidget {
+  const DeleteButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        context.read<SketchCubit>().delete();
+      },
+      icon: const Icon(Icons.delete),
     );
   }
 }
@@ -150,6 +165,7 @@ class SketchLayerDrawer extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final layer = e.sketch.layers[index];
                     return SketchLayerItemView(
+                      key: Key(layer.id),
                       sketch: e.sketch,
                       layer: layer,
                     );

@@ -60,33 +60,37 @@ class SketchLine with _$SketchLine {
 }
 
 extension SketchLineX on SketchLine {
-  bool isCollide(Offset point) {
-    final p3 = Vector2(point.dx, point.dy);
+  bool isCollide(Offset p1, Offset p2) {
     final d1 = pen.strokeWidth / 2;
     final d2 = pow(d1, 2);
+    final v12 = (p2 - p1).toVector();
+    final v12t = Vector2(v12.y, -v12.x);
+
     for (int i = 0; i < points.length - 1; i++) {
-      final p1 = Vector2(points[i].dx, points[i].dy);
-      final p2 = Vector2(points[i + 1].dx, points[i + 1].dy);
+      final p3 = points[i];
+      final p4 = points[i + 1];
 
-      final v12 = p2 - p1;
-      final v13 = p3 - p1;
-      final v23 = p3 - p2;
+      final v31 = (p1 - p3).toVector();
+      final v32 = (p2 - p3).toVector();
 
-      if (v13.dot(v13).abs() < d2) return true;
-      if (v23.dot(v23).abs() < d2) return true;
+      if (v31.dot(v31).abs() < d2) return true;
 
-      if (v12.dot(v12).abs() < 1e-7) continue;
-      final n12 = v12.normalized();
-      final n13 = v13.normalized();
-      final n23 = v23.normalized();
+      final v13 = (p3 - p1).toVector();
+      final v14 = (p4 - p1).toVector();
 
-      if (n12.dot(n13) < 0 || n12.dot(n23) > 0) continue;
+      if (v12t.dot(v13).sign == v12t.dot(v14).sign) continue;
 
-      final n = Vector2(n12.y, -n12.x);
-      if (n.dot(v13).abs() < d1) return true;
+      final v34 = (p4 - p3).toVector();
+      final v34t = Vector2(v34.y, -v34.x);
+
+      if (v34t.dot(v31).sign != v34t.dot(v32).sign) return true;
     }
     return false;
   }
+}
+
+extension OffsetX on Offset {
+  Vector2 toVector() => Vector2(dx, dy);
 }
 
 @freezed
