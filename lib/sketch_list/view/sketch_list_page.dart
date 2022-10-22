@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sketch/sketch/view/view.dart';
@@ -63,9 +61,26 @@ class SketchItemListView extends StatelessWidget {
                   itemCount: e.sketches.length,
                   itemBuilder: (context, index) {
                     final sketch = e.sketches[index];
-                    return SketchItemView(
+                    return Dismissible(
                       key: Key(sketch.id),
-                      sketch: sketch,
+                      background: ColoredBox(
+                        color: Colors.red,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Icon(Icons.delete),
+                              Icon(Icons.delete),
+                            ],
+                          ),
+                        ),
+                      ),
+                      onDismissed: (direction) =>
+                          context.read<SketchListCubit>().delete(sketch),
+                      child: SketchItemView(
+                        sketch: sketch,
+                      ),
                     );
                   },
                 ),
@@ -82,26 +97,11 @@ class SketchItemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mat = Matrix4.identity()
-      ..scale(60 / max(sketch.size.width, sketch.size.height));
     return ListTile(
       visualDensity: const VisualDensity(vertical: 3),
-      leading: Container(
-        color: Colors.white,
-        width: 60,
-        height: 60,
-        child: Transform(
-          transform: mat,
-          child: SketchCanvasView(
-            sketch: sketch,
-            clip: Rect.fromLTWH(
-              0,
-              0,
-              sketch.size.width,
-              sketch.size.height,
-            ),
-          ),
-        ),
+      leading: SketchThumbnailView(
+        sketch: sketch,
+        size: 60,
       ),
       title: sketch.title.isEmpty
           ? Text(
@@ -117,12 +117,6 @@ class SketchItemView extends StatelessWidget {
           ),
         );
       },
-      trailing: IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: () {
-          context.read<SketchListCubit>().delete(sketch);
-        },
-      ),
     );
   }
 }

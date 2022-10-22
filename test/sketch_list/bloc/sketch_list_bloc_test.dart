@@ -36,7 +36,11 @@ void main() {
   group('after constructor', () {
     late Sketch sketch;
     setUp(() {
-      sketch = Sketch(id: '1');
+      sketch = Sketch(
+        id: '1',
+        activeLayerId: 'layer1',
+        layers: [SketchLayer(id: 'layer1')],
+      );
       repository = _MockSketchRepository();
       when(() => repository.onSketches).thenAnswer((_) => Stream.value([]));
       bloc = SketchListCubit()..started(repository);
