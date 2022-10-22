@@ -284,6 +284,8 @@ class SketchCubit extends Cubit<SketchState> {
     await state.mapOrNull(
       success: (e) async {
         final sketch = e.sketch;
+        if (layer.id == sketch.activeLayerId) return;
+
         final copy = e.copyWith.sketch(
             layers: sketch.layers
                 .where((element) => element.id != layer.id)
@@ -323,6 +325,20 @@ class SketchCubit extends Cubit<SketchState> {
                     ? element.copyWith(title: title)
                     : element)
                 .toList());
+        emit(copy);
+        await _repo.save(copy.sketch);
+      },
+    );
+  }
+
+  void toggleVisibleLayer(SketchLayer layer) async {
+    await state.mapOrNull(
+      success: (e) async {
+        final sketch = e.sketch;
+        final layers = sketch.layers
+            .map((e) => e.id == layer.id ? e.copyWith(visible: !e.visible) : e)
+            .toList();
+        final copy = e.copyWith.sketch(layers: layers);
         emit(copy);
         await _repo.save(copy.sketch);
       },

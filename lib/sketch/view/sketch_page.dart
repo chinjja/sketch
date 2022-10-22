@@ -38,32 +38,29 @@ class SketchView extends StatelessWidget {
       appBar: AppBar(
         title: const SketchTitle(),
         actions: const [
-          SketchModeButton(
-            icon: Icon(Icons.brush),
-            mode: SketchMode.pen,
-          ),
-          SketchModeButton(
-            icon: Icon(Icons.cleaning_services),
-            mode: SketchMode.eraser,
-          ),
-          VerticalDivider(),
           UndoButton(),
           RedoButton(),
-          DeleteButton(),
           VerticalDivider(),
           OpenLayerButton(),
+          SketchMoreButton(),
         ],
       ),
-      body: Column(
-        children: const [
-          Expanded(
-            child: SketchPaintView(),
-          ),
-          SketchControlView(),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: const [
+            Expanded(
+              child: SketchPaintView(),
+            ),
+            SketchControlView(),
+          ],
+        ),
       ),
       endDrawer: const Drawer(
-        child: SketchLayerDrawer(),
+        child: SafeArea(
+          child: ClipRect(
+            child: SketchLayerDrawer(),
+          ),
+        ),
       ),
     );
   }
@@ -125,6 +122,31 @@ class OpenLayerButton extends StatelessWidget {
   }
 }
 
+enum SketchMenu {
+  delete,
+}
+
+class SketchMoreButton extends StatelessWidget {
+  const SketchMoreButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<SketchMenu>(
+      onSelected: (SketchMenu item) {
+        if (item == SketchMenu.delete) {
+          context.read<SketchCubit>().delete();
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<SketchMenu>>[
+        const PopupMenuItem<SketchMenu>(
+          value: SketchMenu.delete,
+          child: Text('Delete'),
+        ),
+      ],
+    );
+  }
+}
+
 class DeleteButton extends StatelessWidget {
   const DeleteButton({super.key});
 
@@ -146,21 +168,51 @@ class SketchLayerDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SketchCubit, SketchState>(
       builder: (context, state) {
+        final bloc = context.read<SketchCubit>();
         return state.maybeMap(
           success: (e) => Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Layer'),
-                  onPressed: () {
-                    context.read<SketchCubit>().addLayer();
-                  },
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.title),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          final layer = e.sketch.activeLayer;
+                          return AlertDialog(
+                            title: const Text('Layer Title'),
+                            content: TextFormField(
+                              initialValue: layer.title,
+                              autofocus: true,
+                              onChanged: (value) =>
+                                  bloc.updateLayerTitle(layer, value),
+                            ),
+                            actions: [
+                              TextButton(
+                                child: const Text('닫기'),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      context.read<SketchCubit>().addLayer();
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () {
+                      context.read<SketchCubit>().addLayer();
+                    },
+                  ),
+                ],
               ),
               Expanded(
                 child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   onReorder: (oldIndex, newIndex) {
                     context
                         .read<SketchCubit>()
@@ -169,10 +221,13 @@ class SketchLayerDrawer extends StatelessWidget {
                   itemCount: e.sketch.layers.length,
                   itemBuilder: (context, index) {
                     final layer = e.sketch.layers[index];
-                    return SketchLayerItemView(
+                    return ReorderableDragStartListener(
                       key: Key(layer.id),
-                      sketch: e.sketch,
-                      layer: layer,
+                      index: index,
+                      child: SketchLayerItemView(
+                        sketch: e.sketch,
+                        layer: layer,
+                      ),
                     );
                   },
                 ),
@@ -198,46 +253,42 @@ class SketchLayerItemView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = sketch.activeLayerId == layer.id;
-    return ListTile(
-      visualDensity: const VisualDensity(vertical: 3),
-      selectedTileColor: Colors.grey.shade200,
-      selected: selected,
-      leading: SketchLayerThumbnailView(
-        layer: layer,
-        sketch: sketch,
-        size: 60,
+    return Dismissible(
+      key: Key(layer.id),
+      background: ColoredBox(
+        color: Colors.red,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [Icon(Icons.delete), Icon(Icons.delete)],
+          ),
+        ),
       ),
-      title: Row(
-        children: [
-          layer.visible
+      confirmDismiss: (direction) async => !selected,
+      onDismissed: (direction) =>
+          context.read<SketchCubit>().deleteLayer(layer),
+      child: ListTile(
+        visualDensity: const VisualDensity(vertical: 3),
+        selectedTileColor: Colors.grey.shade300,
+        selected: selected,
+        leading: SketchLayerThumbnailView(
+          layer: layer,
+          sketch: sketch,
+          size: 60,
+        ),
+        trailing: IconButton(
+          icon: layer.visible
               ? const Icon(Icons.visibility)
               : const Icon(Icons.visibility_off),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextFormField(
-              initialValue: layer.title,
-              decoration: const InputDecoration(
-                hintText: '제목 없음',
-                border: InputBorder.none,
-              ),
-              onChanged: (value) {
-                context.read<SketchCubit>().updateLayerTitle(layer, value);
-              },
-            ),
-          ),
-        ],
+          onPressed: () =>
+              context.read<SketchCubit>().toggleVisibleLayer(layer),
+        ),
+        title: Text(layer.title),
+        onTap: () {
+          context.read<SketchCubit>().activeLayer(layer);
+        },
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: selected
-            ? null
-            : () {
-                context.read<SketchCubit>().deleteLayer(layer);
-              },
-      ),
-      onTap: () {
-        context.read<SketchCubit>().activeLayer(layer);
-      },
     );
   }
 }
@@ -432,6 +483,14 @@ class SketchControlView extends StatelessWidget {
       children: const [
         SketchColorPicker(
           key: Key('SketchView_ColorPicker'),
+        ),
+        SketchModeButton(
+          icon: Icon(Icons.brush),
+          mode: SketchMode.pen,
+        ),
+        SketchModeButton(
+          icon: Icon(Icons.cleaning_services),
+          mode: SketchMode.eraser,
         ),
         Expanded(
           child: StrokeWidthSlider(

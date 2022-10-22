@@ -61,9 +61,26 @@ class SketchItemListView extends StatelessWidget {
                   itemCount: e.sketches.length,
                   itemBuilder: (context, index) {
                     final sketch = e.sketches[index];
-                    return SketchItemView(
+                    return Dismissible(
                       key: Key(sketch.id),
-                      sketch: sketch,
+                      background: ColoredBox(
+                        color: Colors.red,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Icon(Icons.delete),
+                              Icon(Icons.delete),
+                            ],
+                          ),
+                        ),
+                      ),
+                      onDismissed: (direction) =>
+                          context.read<SketchListCubit>().delete(sketch),
+                      child: SketchItemView(
+                        sketch: sketch,
+                      ),
                     );
                   },
                 ),
@@ -100,12 +117,6 @@ class SketchItemView extends StatelessWidget {
           ),
         );
       },
-      trailing: IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: () {
-          context.read<SketchListCubit>().delete(sketch);
-        },
-      ),
     );
   }
 }
