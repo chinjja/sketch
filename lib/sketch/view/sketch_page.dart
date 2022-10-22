@@ -160,7 +160,12 @@ class SketchLayerDrawer extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ListView.builder(
+                child: ReorderableListView.builder(
+                  onReorder: (oldIndex, newIndex) {
+                    context
+                        .read<SketchCubit>()
+                        .reorderLayer(oldIndex, newIndex);
+                  },
                   itemCount: e.sketch.layers.length,
                   itemBuilder: (context, index) {
                     final layer = e.sketch.layers[index];

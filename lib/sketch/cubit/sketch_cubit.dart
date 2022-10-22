@@ -295,6 +295,24 @@ class SketchCubit extends Cubit<SketchState> {
     );
   }
 
+  void reorderLayer(int oldIndex, int newIndex) async {
+    await state.mapOrNull(
+      success: (e) async {
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        final sketch = e.sketch;
+        final layers = [...sketch.layers];
+        final layer = layers[oldIndex];
+        layers.removeAt(oldIndex);
+        layers.insert(newIndex, layer);
+        final copy = e.copyWith.sketch(layers: layers);
+        emit(copy);
+        await _repo.save(copy.sketch);
+      },
+    );
+  }
+
   void updateLayerTitle(SketchLayer layer, String title) async {
     await state.mapOrNull(
       success: (e) async {
