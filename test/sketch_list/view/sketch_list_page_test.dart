@@ -61,7 +61,9 @@ void main() {
         sketch,
       ]));
       await tester.pumpApp(bloc);
-      await tester.tap(find.byIcon(Icons.delete));
+      expect(find.byType(SketchItemView), findsOneWidget);
+      await tester.fling(find.byType(SketchItemView), Offset(300, 0), 1000);
+      await tester.pumpAndSettle();
 
       verify(() => bloc.delete(sketch)).called(1);
     });
