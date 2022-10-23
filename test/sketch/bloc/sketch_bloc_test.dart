@@ -49,7 +49,7 @@ void main() {
     blocTest<SketchCubit, SketchState>(
       'emits [] when begin() ia called.',
       build: () => bloc,
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(100, 100)),
+      act: (bloc) => bloc.begin(1, Offset(0, 0), Size(100, 100)),
       expect: () => [],
     );
 
@@ -99,7 +99,7 @@ void main() {
       'emits [success] when begin() ia called.',
       build: () => bloc,
       seed: () => SketchState.success(sketch: sketch),
-      act: (bloc) => bloc.begin(Offset(0, 0), Size(100, 100)),
+      act: (bloc) => bloc.begin(1, Offset(0, 0), Size(100, 100)),
       expect: () => [
         SketchState.success(
           activeLine: SketchLine(

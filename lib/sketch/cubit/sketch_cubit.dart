@@ -94,15 +94,25 @@ class SketchCubit extends Cubit<SketchState> {
     });
   }
 
-  void begin(Offset point, Size size) async {
+  Offset? _panStart;
+
+  void begin(int pointerCount, Offset point, Size size) async {
     await state.mapOrNull(
       success: (e) async {
-        switch (e.mode) {
-          case SketchMode.pen:
-            _penStarted(e, point, size);
+        switch (pointerCount) {
+          case 1:
+            _panStart = null;
+            switch (e.mode) {
+              case SketchMode.pen:
+                _penStarted(e, point - e.sketch.viewport.offset, size);
+                break;
+              case SketchMode.eraser:
+                _eraserStarted(e, point - e.sketch.viewport.offset, size);
+                break;
+            }
             break;
-          case SketchMode.eraser:
-            _eraserStarted(e, point, size);
+          case 2:
+            _panStart = point;
             break;
         }
       },
@@ -120,11 +130,9 @@ class SketchCubit extends Cubit<SketchState> {
         points: [point],
         pen: sketch.pen,
       ),
-      sketch: sketch.copyWith(
-        viewport: SketchViewport(
-          width: size.width,
-          height: size.height,
-        ),
+      sketch: sketch.copyWith.viewport(
+        width: size.width,
+        height: size.height,
       ),
     );
     emit(copy);
@@ -133,13 +141,23 @@ class SketchCubit extends Cubit<SketchState> {
   void append(Offset point) async {
     await state.mapOrNull(
       success: (e) async {
-        switch (e.mode) {
-          case SketchMode.pen:
-            _penUpdate(e, point);
-            break;
-          case SketchMode.eraser:
-            _eraserUpdate(e, point);
-            break;
+        if (_panStart == null) {
+          switch (e.mode) {
+            case SketchMode.pen:
+              _penUpdate(e, point - e.sketch.viewport.offset);
+              break;
+            case SketchMode.eraser:
+              _eraserUpdate(e, point - e.sketch.viewport.offset);
+              break;
+          }
+        } else {
+          final viewport = e.sketch.viewport;
+          final copy = e.copyWith.sketch.viewport(
+            x: viewport.x + (point - _panStart!).dx,
+            y: viewport.y + (point - _panStart!).dy,
+          );
+          _panStart = point;
+          emit(copy);
         }
       },
     );

@@ -94,25 +94,25 @@ void main() {
     });
 
     testWidgets('line()', (tester) async {
-      when(() => bloc.begin(any(), any())).thenReturn(null);
+      when(() => bloc.begin(1, any(), any())).thenReturn(null);
       when(() => bloc.append(any())).thenReturn(null);
       await tester.pumpApp(bloc);
 
       await tester.drag(find.byType(SketchCanvasView), Offset(50, 0));
 
-      verify(() => bloc.begin(any(), any())).called(1);
+      verify(() => bloc.begin(1, any(), any())).called(1);
       verify(() => bloc.append(any())).called(greaterThan(0));
       verify(() => bloc.end()).called(1);
     });
 
     testWidgets('point()', (tester) async {
-      when(() => bloc.begin(any(), any())).thenReturn(null);
+      when(() => bloc.begin(1, any(), any())).thenReturn(null);
       when(() => bloc.append(any())).thenReturn(null);
       await tester.pumpApp(bloc);
 
       await tester.tap(find.byType(SketchCanvasView));
 
-      verify(() => bloc.begin(any(), any())).called(1);
+      verify(() => bloc.begin(1, any(), any())).called(1);
       verify(() => bloc.end()).called(1);
     });
 

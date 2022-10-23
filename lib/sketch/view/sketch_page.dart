@@ -49,7 +49,7 @@ class SketchView extends StatelessWidget {
         child: Column(
           children: const [
             Expanded(
-              child: SketchPaintView(),
+              child: ClipRect(child: SketchPaintView()),
             ),
             SketchControlView(),
           ],
@@ -272,7 +272,7 @@ class SketchLayerItemView extends StatelessWidget {
         visualDensity: const VisualDensity(vertical: 3),
         selectedTileColor: Colors.grey.shade300,
         selected: selected,
-        leading: SketchLayerThumbnailView(
+        leading: SketchThumbnailView(
           layer: layer,
           sketch: sketch,
           size: 60,
@@ -369,21 +369,27 @@ class SketchPaintView extends StatelessWidget {
       builder: (context, state) {
         return state.maybeMap(
           success: (e) => LayoutBuilder(builder: (context, constraints) {
-            return GestureDetector(
-              onPanStart: (details) {
-                context
-                    .read<SketchCubit>()
-                    .begin(details.localPosition, constraints.biggest);
-              },
-              onPanUpdate: (details) {
-                context.read<SketchCubit>().append(details.localPosition);
-              },
-              onPanEnd: (details) {
-                context.read<SketchCubit>().end();
-              },
-              child: SketchCanvasView(
-                sketch: e.sketch,
-                activeLine: e.activeLine,
+            return Transform.translate(
+              transformHitTests: false,
+              offset: e.sketch.viewport.offset,
+              child: GestureDetector(
+                onScaleStart: (details) {
+                  context.read<SketchCubit>().begin(
+                        details.pointerCount,
+                        details.localFocalPoint,
+                        constraints.biggest,
+                      );
+                },
+                onScaleUpdate: (details) {
+                  context.read<SketchCubit>().append(details.localFocalPoint);
+                },
+                onScaleEnd: (details) {
+                  context.read<SketchCubit>().end();
+                },
+                child: SketchCanvasView(
+                  sketch: e.sketch,
+                  activeLine: e.activeLine,
+                ),
               ),
             );
           }),
@@ -410,11 +416,16 @@ class SketchCanvasView extends StatelessWidget {
     return Stack(
       children: [
         for (final layer in sketch.layers) ...[
-          if (layer.visible) SketchLayerView(layer: layer, clip: clip),
+          if (layer.visible)
+            SketchLayerView(
+              layer: layer,
+            ),
           if (layer.id == sketch.activeLayerId && activeLine != null)
             CustomPaint(
               size: Size.infinite,
-              painter: SketchPainter([activeLine!], clip),
+              painter: SketchPainter(
+                [activeLine!],
+              ),
             ),
         ]
       ],
@@ -424,11 +435,9 @@ class SketchCanvasView extends StatelessWidget {
 
 class SketchLayerView extends StatelessWidget {
   final SketchLayer layer;
-  final Rect? clip;
   const SketchLayerView({
     super.key,
     required this.layer,
-    this.clip,
   });
 
   @override
@@ -437,26 +446,21 @@ class SketchLayerView extends StatelessWidget {
       child: CustomPaint(
         isComplex: true,
         size: Size.infinite,
-        painter: SketchPainter(layer.lines, clip),
+        painter: SketchPainter(
+          layer.lines,
+        ),
       ),
     );
   }
 }
 
 class SketchPainter extends CustomPainter {
-  final Rect? clip;
   final List<SketchLine> sketches;
 
-  const SketchPainter(this.sketches, [this.clip]);
+  const SketchPainter(this.sketches);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (clip != null) {
-      canvas.clipRect(clip!);
-    } else {
-      canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    }
-
     final paint = Paint();
     for (final sketch in sketches) {
       paint
@@ -581,57 +585,35 @@ class SketchClearButton extends StatelessWidget {
 
 class SketchThumbnailView extends StatelessWidget {
   final Sketch sketch;
+  final SketchLayer? layer;
   final double size;
 
   const SketchThumbnailView({
     super.key,
     required this.sketch,
     required this.size,
+    this.layer,
   });
 
   @override
   Widget build(BuildContext context) {
     final mat = Matrix4.identity()
-      ..scale(size / max(sketch.viewport.width, sketch.viewport.height));
-    return Container(
-      color: Colors.white,
-      width: size,
-      height: size,
-      child: Transform(
-        transform: mat,
-        child: SketchCanvasView(
-          sketch: sketch,
-          clip: sketch.viewport.toRect(),
-        ),
-      ),
-    );
-  }
-}
-
-class SketchLayerThumbnailView extends StatelessWidget {
-  final Sketch sketch;
-  final SketchLayer layer;
-  final double size;
-  const SketchLayerThumbnailView({
-    super.key,
-    required this.sketch,
-    required this.layer,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final mat = Matrix4.identity()
-      ..scale(size / max(sketch.viewport.width, sketch.viewport.height));
-    return Container(
-      color: Colors.white,
-      width: size,
-      height: size,
-      child: Transform(
-        transform: mat,
-        child: SketchLayerView(
-          layer: layer,
-          clip: sketch.viewport.toRect(),
+      ..scale(size / max(sketch.viewport.width, sketch.viewport.height))
+      ..translate(sketch.viewport.x, sketch.viewport.y);
+    return ClipRect(
+      child: Container(
+        color: Colors.white,
+        width: size,
+        height: size,
+        child: Transform(
+          transform: mat,
+          child: layer != null
+              ? SketchLayerView(
+                  layer: layer!,
+                )
+              : SketchCanvasView(
+                  sketch: sketch,
+                ),
         ),
       ),
     );

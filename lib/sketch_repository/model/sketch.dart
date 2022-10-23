@@ -48,6 +48,8 @@ class SketchViewport with _$SketchViewport {
 
 extension SketchViewportX on SketchViewport {
   Rect toRect() => Rect.fromLTWH(x, y, width, height);
+  Offset get offset => Offset(x, y);
+  Size get size => Size(width, height);
 }
 
 @freezed
