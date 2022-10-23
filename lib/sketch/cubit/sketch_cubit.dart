@@ -225,7 +225,6 @@ class SketchCubit extends Cubit<SketchState> {
         _prev = null;
         _modify(copy.sketch);
         emit(copy);
-        await _repo.save(copy.sketch);
       },
     );
   }
