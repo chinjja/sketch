@@ -8,6 +8,7 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 import '../converter/converter.dart';
 
 part 'sketch.freezed.dart';
+part 'sketch.g.dart';
 
 @freezed
 class Sketch with _$Sketch {
@@ -29,6 +30,8 @@ class Sketch with _$Sketch {
       layers: [layer],
     );
   }
+
+  factory Sketch.fromJson(Map<String, dynamic> json) => _$SketchFromJson(json);
 }
 
 extension SketchX on Sketch {
@@ -44,6 +47,9 @@ class SketchViewport with _$SketchViewport {
     required double width,
     required double height,
   }) = _SketchViewport;
+
+  factory SketchViewport.fromJson(Map<String, dynamic> json) =>
+      _$SketchViewportFromJson(json);
 }
 
 extension SketchViewportX on SketchViewport {
@@ -59,6 +65,9 @@ class SketchLine with _$SketchLine {
     @Default([]) List<Offset> points,
     @Default(SketchPen()) SketchPen pen,
   }) = _SketchLine;
+
+  factory SketchLine.fromJson(Map<String, dynamic> json) =>
+      _$SketchLineFromJson(json);
 }
 
 extension SketchLineX on SketchLine {
@@ -102,6 +111,9 @@ class SketchPen with _$SketchPen {
     @Default(Colors.black) Color color,
     @Default(5.0) double strokeWidth,
   }) = _SketchPen;
+
+  factory SketchPen.fromJson(Map<String, dynamic> json) =>
+      _$SketchPenFromJson(json);
 }
 
 @freezed
@@ -112,4 +124,7 @@ class SketchLayer with _$SketchLayer {
     @Default('') String title,
     @Default([]) List<SketchLine> lines,
   }) = _SketchLayer;
+
+  factory SketchLayer.fromJson(Map<String, dynamic> json) =>
+      _$SketchLayerFromJson(json);
 }
