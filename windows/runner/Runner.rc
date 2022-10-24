@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.chinjja" "\0"
-            VALUE "FileDescription", "note" "\0"
+            VALUE "FileDescription", "sketch" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "note" "\0"
+            VALUE "InternalName", "sketch" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2022 com.chinjja. All rights reserved." "\0"
-            VALUE "OriginalFilename", "note.exe" "\0"
-            VALUE "ProductName", "note" "\0"
+            VALUE "OriginalFilename", "sketch.exe" "\0"
+            VALUE "ProductName", "sketch" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
