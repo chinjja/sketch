@@ -99,7 +99,7 @@ extension OffsetX on Offset {
 class SketchPen with _$SketchPen {
   @ColorConverter()
   const factory SketchPen({
-    @Default(Colors.black) color,
+    @Default(Colors.black) Color color,
     @Default(5.0) double strokeWidth,
   }) = _SketchPen;
 }
