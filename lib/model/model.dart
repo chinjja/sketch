@@ -42,6 +42,11 @@ extension SketchX on Sketch {
     return copyWith(layers: [...layers, layer]);
   }
 
+  Sketch setLayer(SketchLayer layer) {
+    return copyWith(
+        layers: layers.map((e) => e.id == layer.id ? layer : e).toList());
+  }
+
   Sketch removeLayer(SketchLayer layer) {
     return copyWith(layers: layers.where((e) => e.id != layer.id).toList());
   }
@@ -51,6 +56,12 @@ extension SketchX on Sketch {
       throw Exception('$layer {layer.id} is not member');
     }
     return copyWith(activeLayerId: layer.id);
+  }
+
+  Sketch clear() {
+    return copyWith(
+      layers: [activeLayer.clear()],
+    );
   }
 }
 
@@ -159,5 +170,13 @@ class SketchLayer with _$SketchLayer {
 extension SketchLayerX on SketchLayer {
   SketchLayer addLine(SketchLine line) {
     return copyWith(lines: [...lines, line]);
+  }
+
+  SketchLayer clear() {
+    return copyWith(
+      lines: [],
+      title: '',
+      visible: true,
+    );
   }
 }

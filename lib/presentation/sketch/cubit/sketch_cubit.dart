@@ -168,12 +168,7 @@ class SketchCubit extends Cubit<SketchState> {
     if (line == null) return;
 
     final copy = state.copyWith(
-      activeLine: line.copyWith(
-        points: [
-          ...line.points,
-          point,
-        ],
-      ),
+      activeLine: line.addPoints([point]),
     );
     emit(copy);
   }
@@ -189,17 +184,11 @@ class SketchCubit extends Cubit<SketchState> {
         if (line == null) return;
 
         if (line.points.length == 1) {
-          line = line.copyWith(points: [...line.points, line.points.first]);
+          line = line.addPoints([line.points.first]);
         }
 
-        final sketch = e.sketch;
-        final layers = sketch.layers
-            .map((e) => e.id == sketch.activeLayerId
-                ? e.copyWith(lines: [...e.lines, line!])
-                : e)
-            .toList();
         final copy = e.copyWith(
-          sketch: sketch.copyWith(layers: layers),
+          sketch: e.sketch.setLayer(e.sketch.activeLayer.addLine(line)),
           activeLine: null,
         );
         _modify(copy.sketch);
@@ -211,13 +200,8 @@ class SketchCubit extends Cubit<SketchState> {
   void clear() async {
     await state.mapOrNull(
       success: (e) async {
-        final layer = SketchLayer(id: const Uuid().v4());
-        final sketch = e.sketch.copyWith(
-          activeLayerId: layer.id,
-          layers: [layer],
-        );
         final copy = e.copyWith(
-          sketch: sketch,
+          sketch: e.sketch.clear(),
           activeLine: null,
         );
         _prev = null;
@@ -242,10 +226,9 @@ class SketchCubit extends Cubit<SketchState> {
           success: (e) async {
             final layer = await _erase(e.sketch.activeLayer, _prev!, point);
             _prev = point;
-            final copy = e.copyWith.sketch(
-                layers: e.sketch.layers
-                    .map((e) => e.id == layer.id ? layer : e)
-                    .toList());
+            final copy = e.copyWith(
+              sketch: e.sketch.setLayer(layer),
+            );
             _modify(copy.sketch);
             emit(copy);
           },
@@ -282,10 +265,9 @@ class SketchCubit extends Cubit<SketchState> {
   void addLayer() async {
     await state.mapOrNull(
       success: (e) async {
-        final sketch = e.sketch;
         final layer = SketchLayer(id: const Uuid().v4());
         final copy = e.copyWith(
-          sketch: sketch.copyWith(layers: [...sketch.layers, layer]),
+          sketch: e.sketch.addLayer(layer),
         );
         _modify(copy.sketch);
         emit(copy);
@@ -296,13 +278,9 @@ class SketchCubit extends Cubit<SketchState> {
   void deleteLayer(SketchLayer layer) async {
     await state.mapOrNull(
       success: (e) async {
-        final sketch = e.sketch;
-        if (layer.id == sketch.activeLayerId) return;
-
-        final copy = e.copyWith.sketch(
-            layers: sketch.layers
-                .where((element) => element.id != layer.id)
-                .toList());
+        final copy = e.copyWith(
+          sketch: e.sketch.removeLayer(layer),
+        );
         _modify(copy.sketch);
         emit(copy);
       },
@@ -357,7 +335,7 @@ class SketchCubit extends Cubit<SketchState> {
   void activeLayer(SketchLayer layer) async {
     await state.mapOrNull(
       success: (e) async {
-        final copy = e.copyWith.sketch(activeLayerId: layer.id);
+        final copy = e.copyWith(sketch: e.sketch.setActiveLayer(layer));
         emit(copy);
       },
     );
