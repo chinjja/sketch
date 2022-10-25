@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sketch/presentation/presentation.dart';
+import 'package:sketch/utils/utils.dart';
 
 class _MockSketchService extends Mock implements SketchService {}
 
 class _FakeSketch extends Fake implements Sketch {}
 
+class _MockUndoStack extends Mock implements UndoStack<Sketch?> {}
+
 void main() {
+  late UndoStack<Sketch?> stack;
   late SketchService service;
   late SketchCubit bloc;
 
@@ -19,8 +23,9 @@ void main() {
   });
 
   setUp(() {
+    stack = _MockUndoStack();
     service = _MockSketchService();
-    bloc = SketchCubit();
+    bloc = SketchCubit(stack);
   });
 
   blocTest<SketchCubit, SketchState>(
@@ -43,6 +48,9 @@ void main() {
         layers: [SketchLayer(id: 'layer1')],
       );
       bloc.started(service);
+      when(() => stack.canRedo).thenReturn(false);
+      when(() => stack.canUndo).thenReturn(false);
+      when(() => stack.state).thenReturn(sketch);
     });
 
     blocTest<SketchCubit, SketchState>(
@@ -62,10 +70,16 @@ void main() {
     blocTest<SketchCubit, SketchState>(
       'emits [success] when sketch() is called.',
       build: () => bloc,
+      setUp: () {
+        when(() => stack.reset(sketch)).thenReturn(null);
+      },
       act: (bloc) => bloc.sketch(sketch),
       expect: () => [
         SketchState.success(sketch: sketch),
       ],
+      verify: (bloc) {
+        verify(() => stack.reset(sketch)).called(1);
+      },
     );
     blocTest<SketchCubit, SketchState>(
       'emits [] when undo is called.',
@@ -73,6 +87,9 @@ void main() {
       seed: () => SketchState.success(sketch: sketch),
       act: (bloc) => bloc.undo(),
       expect: () => [],
+      verify: (bloc) {
+        verifyNever(() => stack.undo());
+      },
     );
 
     blocTest<SketchCubit, SketchState>(
@@ -81,6 +98,9 @@ void main() {
       seed: () => SketchState.success(sketch: sketch),
       act: (bloc) => bloc.redo(),
       expect: () => [],
+      verify: (bloc) {
+        verifyNever(() => stack.redo());
+      },
     );
   });
 
@@ -89,6 +109,9 @@ void main() {
     setUp(() {
       sketch = Sketch.create('1');
       bloc.started(service);
+      when(() => stack.canRedo).thenReturn(false);
+      when(() => stack.canUndo).thenReturn(false);
+      when(() => stack.state).thenReturn(sketch);
     });
 
     tearDown(() {
@@ -159,25 +182,29 @@ void main() {
         activeLayerId: 'layer1',
         layers: [SketchLayer(id: 'layer1')],
       );
-      when(() => service.save(any())).thenAnswer((_) async => _FakeSketch());
+      when(() => service.save(any())).thenAnswer((_) async => sketch);
       bloc.started(service);
+      when(() => stack.canRedo).thenReturn(false);
+      when(() => stack.canUndo).thenReturn(false);
+      when(() => stack.state).thenReturn(sketch);
     });
 
     tearDown(() {
       verify(() => service.save(any())).called(1);
     });
 
-    // blocTest<SketchCubit, SketchState>(
-    //   'emits [success] when clear() is called.',
-    //   build: () => bloc,
-    //   seed: () => SketchState.success(
-    //       sketch: Sketch.create('1', layer: SketchLayer(id: 'a'))),
-    //   act: (bloc) => bloc.clear(),
-    //   expect: () => [
-    //     SketchState.success(
-    //         sketch: Sketch.create('1', layer: SketchLayer(id: 'a'))),
-    //   ],
-    // );
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when clear() is called.',
+      build: () => bloc,
+      seed: () => SketchState.success(
+          sketch: Sketch.create('1', layer: SketchLayer(id: 'a'))),
+      act: (bloc) => bloc.clear(),
+      expect: () => [
+        SketchState.success(
+          sketch: sketch,
+        ),
+      ],
+    );
 
     blocTest<SketchCubit, SketchState>(
       'emits [success] when setColor() is called.',
@@ -208,54 +235,6 @@ void main() {
         SketchState.success(sketch: sketch.copyWith(title: 'test')),
       ],
     );
-
-    // blocTest<SketchCubit, SketchState>(
-    //   'emits [success] when undo is called.',
-    //   build: () => bloc,
-    //   seed: () => SketchState.success(
-    //     sketch: Sketch(
-    //       id: '1',
-    //       lines: [
-    //         SketchLine(),
-    //       ],
-    //     ),
-    //   ),
-    //   act: (bloc) => bloc.undo(),
-    //   expect: () => [
-    //     SketchState.success(
-    //       sketch: Sketch(
-    //         id: '1',
-    //       ),
-    //       redoList: [
-    //         SketchLine(),
-    //       ],
-    //     ),
-    //   ],
-    // );
-
-    // blocTest<SketchCubit, SketchState>(
-    //   'emits [success] when redo is called.',
-    //   build: () => bloc,
-    //   seed: () => SketchState.success(
-    //     redoList: [
-    //       SketchLine(),
-    //     ],
-    //     sketch: Sketch(
-    //       id: '1',
-    //     ),
-    //   ),
-    //   act: (bloc) => bloc.redo(),
-    //   expect: () => [
-    //     SketchState.success(
-    //       sketch: Sketch(
-    //         id: '1',
-    //         lines: [
-    //           SketchLine(),
-    //         ],
-    //       ),
-    //     ),
-    //   ],
-    // );
     blocTest<SketchCubit, SketchState>(
       'emits [success] when end() is called. line has a point',
       build: () => bloc,
@@ -266,8 +245,6 @@ void main() {
       act: (bloc) => bloc.end(),
       expect: () => [
         SketchState.success(
-          canUndo: true,
-          canRedo: false,
           activeLine: null,
           sketch: sketch.copyWith(layers: [
             sketch.activeLayer.copyWith(lines: [
@@ -288,8 +265,6 @@ void main() {
       act: (bloc) => bloc.end(),
       expect: () => [
         SketchState.success(
-          canUndo: true,
-          canRedo: false,
           activeLine: null,
           sketch: sketch.copyWith(layers: [
             sketch.activeLayer.copyWith(lines: [
@@ -307,6 +282,9 @@ void main() {
       sketch = Sketch.create('1');
       when(() => service.delete(any())).thenAnswer((_) async => {});
       bloc.started(service);
+      when(() => stack.canRedo).thenReturn(false);
+      when(() => stack.canUndo).thenReturn(false);
+      when(() => stack.state).thenReturn(sketch);
     });
 
     tearDown(() {
@@ -321,6 +299,64 @@ void main() {
       expect: () => [
         SketchState.deleted(sketch: sketch),
       ],
+    );
+  });
+
+  group('undo stack', () {
+    late Sketch sketch;
+    late Sketch stackState;
+    setUp(() {
+      sketch = Sketch.create('1');
+      stackState = Sketch.create('2');
+      bloc.started(service);
+    });
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when undo is called.',
+      build: () => bloc,
+      setUp: () {
+        when(() => stack.canRedo).thenReturn(false);
+        when(() => stack.canUndo).thenReturn(true);
+        when(() => stack.state).thenReturn(stackState);
+      },
+      seed: () => SketchState.success(
+        sketch: sketch,
+      ),
+      act: (bloc) => bloc.undo(),
+      expect: () => [
+        SketchState.success(
+          canRedo: false,
+          canUndo: true,
+          sketch: stackState,
+        ),
+      ],
+      verify: (bloc) {
+        verify(() => stack.undo()).called(1);
+      },
+    );
+
+    blocTest<SketchCubit, SketchState>(
+      'emits [success] when redo is called.',
+      build: () => bloc,
+      setUp: () {
+        when(() => stack.canRedo).thenReturn(true);
+        when(() => stack.canUndo).thenReturn(false);
+        when(() => stack.state).thenReturn(stackState);
+      },
+      seed: () => SketchState.success(
+        sketch: sketch,
+      ),
+      act: (bloc) => bloc.redo(),
+      expect: () => [
+        SketchState.success(
+          canRedo: true,
+          canUndo: false,
+          sketch: stackState,
+        ),
+      ],
+      verify: (bloc) {
+        verify(() => stack.redo()).called(1);
+      },
     );
   });
 }

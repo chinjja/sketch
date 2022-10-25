@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sketch/model/model.dart';
 import 'package:sketch/service/sketch_service.dart';
+import 'package:sketch/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 
 part 'sketch_state.dart';
@@ -13,13 +14,11 @@ part 'sketch_cubit.freezed.dart';
 
 class SketchCubit extends Cubit<SketchState> {
   SketchService? _service;
-  final _undos = <Sketch>[];
-  final _redos = <Sketch>[];
+  final UndoStack<Sketch?> _stack;
 
-  SketchCubit() : super(const SketchState.initial());
-
-  bool get _canUndo => _undos.isNotEmpty;
-  bool get _canRedo => _redos.isNotEmpty;
+  SketchCubit([UndoStack<Sketch?>? stack])
+      : _stack = stack ?? UndoStack(null),
+        super(const SketchState.initial());
 
   StreamSubscription? _eraseSubscription;
 
@@ -28,8 +27,8 @@ class SketchCubit extends Cubit<SketchState> {
     super.emit(
       state.maybeMap(
         success: (e) => e.copyWith(
-          canUndo: _canUndo,
-          canRedo: _canRedo,
+          canUndo: _stack.canUndo,
+          canRedo: _stack.canRedo,
         ),
         orElse: () => state,
       ),
@@ -49,6 +48,7 @@ class SketchCubit extends Cubit<SketchState> {
   }
 
   void sketch(Sketch sketch) {
+    _stack.reset(sketch);
     emit(
       state.maybeMap(
         success: (e) => e.copyWith(sketch: sketch),
@@ -58,38 +58,31 @@ class SketchCubit extends Cubit<SketchState> {
   }
 
   void _modify(Sketch sketch) {
-    state.mapOrNull(success: (e) {
-      if (e.sketch != sketch) {
-        _redos.clear();
-        _undos.add(e.sketch);
-      }
-    });
+    _stack.modify(sketch);
   }
 
   void undo() async {
     state.mapOrNull(success: (e) {
-      if (!_canUndo) return;
+      if (!_stack.canUndo) return;
 
-      final sketch = _undos.removeLast();
-      _redos.add(e.sketch);
+      _stack.undo();
       emit(e.copyWith(
-        sketch: sketch,
-        canUndo: _canUndo,
-        canRedo: _canRedo,
+        sketch: _stack.state!,
+        canUndo: _stack.canUndo,
+        canRedo: _stack.canRedo,
       ));
     });
   }
 
   void redo() async {
     state.mapOrNull(success: (e) {
-      if (!_canRedo) return;
+      if (!_stack.canRedo) return;
 
-      final sketch = _redos.removeLast();
-      _undos.add(e.sketch);
+      _stack.redo();
       emit(e.copyWith(
-        sketch: sketch,
-        canUndo: _canUndo,
-        canRedo: _canRedo,
+        sketch: _stack.state!,
+        canUndo: _stack.canUndo,
+        canRedo: _stack.canRedo,
       ));
     });
   }
