@@ -36,8 +36,9 @@ class SketchCubit extends Cubit<SketchState> {
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     _eraseSubscription?.cancel();
+    _save();
     return super.close();
   }
 
@@ -55,6 +56,12 @@ class SketchCubit extends Cubit<SketchState> {
         orElse: () => SketchState.success(sketch: sketch),
       ),
     );
+  }
+
+  void _save() async {
+    await state.mapOrNull(success: (e) async {
+      await _service!.save(e.sketch);
+    });
   }
 
   void _modify(Sketch sketch) {
@@ -197,7 +204,6 @@ class SketchCubit extends Cubit<SketchState> {
         );
         _modify(copy.sketch);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -210,9 +216,8 @@ class SketchCubit extends Cubit<SketchState> {
           activeLayerId: layer.id,
           layers: [layer],
         );
-        final res = await _service!.save(sketch);
         final copy = e.copyWith(
-          sketch: res,
+          sketch: sketch,
           activeLine: null,
         );
         _prev = null;
@@ -243,7 +248,6 @@ class SketchCubit extends Cubit<SketchState> {
                     .toList());
             _modify(copy.sketch);
             emit(copy);
-            await _service!.save(copy.sketch);
           },
         )?.asStream() ??
         const Stream.empty();
@@ -285,7 +289,6 @@ class SketchCubit extends Cubit<SketchState> {
         );
         _modify(copy.sketch);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -302,7 +305,6 @@ class SketchCubit extends Cubit<SketchState> {
                 .toList());
         _modify(copy.sketch);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -320,7 +322,6 @@ class SketchCubit extends Cubit<SketchState> {
         layers.insert(newIndex, layer);
         final copy = e.copyWith.sketch(layers: layers);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -336,7 +337,6 @@ class SketchCubit extends Cubit<SketchState> {
                     : element)
                 .toList());
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -350,7 +350,6 @@ class SketchCubit extends Cubit<SketchState> {
             .toList();
         final copy = e.copyWith.sketch(layers: layers);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -360,7 +359,6 @@ class SketchCubit extends Cubit<SketchState> {
       success: (e) async {
         final copy = e.copyWith.sketch(activeLayerId: layer.id);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -370,7 +368,6 @@ class SketchCubit extends Cubit<SketchState> {
       success: (e) async {
         final copy = e.copyWith.sketch.pen(color: color);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -380,7 +377,6 @@ class SketchCubit extends Cubit<SketchState> {
       success: (e) async {
         final copy = e.copyWith.sketch.pen(strokeWidth: strokeWidth);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }
@@ -390,7 +386,6 @@ class SketchCubit extends Cubit<SketchState> {
       success: (e) async {
         final copy = e.copyWith.sketch(title: title);
         emit(copy);
-        await _service!.save(copy.sketch);
       },
     );
   }

@@ -66,7 +66,26 @@ void main() {
       act: (bloc) => bloc.append(Offset(0, 0)),
       expect: () => [],
     );
+  });
 
+  group('when close() save a sketch', () {
+    late Sketch sketch;
+    setUp(() {
+      sketch = Sketch(
+        id: '1',
+        activeLayerId: 'layer1',
+        layers: [SketchLayer(id: 'layer1')],
+      );
+      when(() => service.save(any())).thenAnswer((_) async => sketch);
+      bloc.started(service);
+      when(() => stack.canRedo).thenReturn(false);
+      when(() => stack.canUndo).thenReturn(false);
+      when(() => stack.state).thenReturn(sketch);
+    });
+
+    tearDown(() {
+      verify(() => service.save(any())).called(1);
+    });
     blocTest<SketchCubit, SketchState>(
       'emits [success] when sketch() is called.',
       build: () => bloc,
@@ -102,21 +121,6 @@ void main() {
         verifyNever(() => stack.redo());
       },
     );
-  });
-
-  group('sketch never save', () {
-    late Sketch sketch;
-    setUp(() {
-      sketch = Sketch.create('1');
-      bloc.started(service);
-      when(() => stack.canRedo).thenReturn(false);
-      when(() => stack.canUndo).thenReturn(false);
-      when(() => stack.state).thenReturn(sketch);
-    });
-
-    tearDown(() {
-      verifyNever(() => service.save(any()));
-    });
     blocTest<SketchCubit, SketchState>(
       'emits [success] when begin() ia called.',
       build: () => bloc,
@@ -172,32 +176,11 @@ void main() {
       act: (bloc) => bloc.end(),
       expect: () => [],
     );
-  });
-
-  group('sketch save', () {
-    late Sketch sketch;
-    setUp(() {
-      sketch = Sketch(
-        id: '1',
-        activeLayerId: 'layer1',
-        layers: [SketchLayer(id: 'layer1')],
-      );
-      when(() => service.save(any())).thenAnswer((_) async => sketch);
-      bloc.started(service);
-      when(() => stack.canRedo).thenReturn(false);
-      when(() => stack.canUndo).thenReturn(false);
-      when(() => stack.state).thenReturn(sketch);
-    });
-
-    tearDown(() {
-      verify(() => service.save(any())).called(1);
-    });
 
     blocTest<SketchCubit, SketchState>(
       'emits [success] when clear() is called.',
       build: () => bloc,
-      seed: () => SketchState.success(
-          sketch: Sketch.create('1', layer: SketchLayer(id: 'a'))),
+      seed: () => SketchState.success(sketch: sketch, activeLine: SketchLine()),
       act: (bloc) => bloc.clear(),
       expect: () => [
         SketchState.success(
@@ -309,6 +292,11 @@ void main() {
       sketch = Sketch.create('1');
       stackState = Sketch.create('2');
       bloc.started(service);
+      when(() => service.save(any())).thenAnswer((_) async => sketch);
+    });
+
+    tearDown(() {
+      verify(() => service.save(any())).called(1);
     });
 
     blocTest<SketchCubit, SketchState>(
