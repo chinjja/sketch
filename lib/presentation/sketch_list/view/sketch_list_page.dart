@@ -97,9 +97,11 @@ class SketchItemView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       visualDensity: const VisualDensity(vertical: 3),
-      leading: SketchThumbnailView(
-        sketch: sketch,
-        size: 60,
+      leading: FittedBox(
+        fit: BoxFit.cover,
+        child: SketchThumbnailView(
+          sketch: sketch,
+        ),
       ),
       title: sketch.title.isEmpty
           ? Text(

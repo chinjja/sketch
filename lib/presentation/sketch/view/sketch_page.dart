@@ -271,10 +271,12 @@ class SketchLayerItemView extends StatelessWidget {
         visualDensity: const VisualDensity(vertical: 3),
         selectedTileColor: Colors.grey.shade300,
         selected: selected,
-        leading: SketchThumbnailView(
-          layer: layer,
-          sketch: sketch,
-          size: 60,
+        leading: FittedBox(
+          fit: BoxFit.cover,
+          child: SketchThumbnailView(
+            layer: layer,
+            sketch: sketch,
+          ),
         ),
         trailing: IconButton(
           icon: layer.visible
@@ -585,27 +587,22 @@ class SketchClearButton extends StatelessWidget {
 class SketchThumbnailView extends StatelessWidget {
   final Sketch sketch;
   final SketchLayer? layer;
-  final double size;
 
   const SketchThumbnailView({
     super.key,
     required this.sketch,
-    required this.size,
     this.layer,
   });
 
   @override
   Widget build(BuildContext context) {
-    final mat = Matrix4.identity()
-      ..scale(size / max(sketch.viewport.width, sketch.viewport.height))
-      ..translate(sketch.viewport.x, sketch.viewport.y);
     return ClipRect(
       child: Container(
         color: Colors.white,
-        width: size,
-        height: size,
-        child: Transform(
-          transform: mat,
+        width: sketch.viewport.width,
+        height: sketch.viewport.height,
+        child: Transform.translate(
+          offset: sketch.viewport.offset,
           child: layer != null
               ? SketchLayerView(
                   layer: layer!,
