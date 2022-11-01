@@ -1,0 +1,27 @@
+name: Flutter Web
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build Web
+    runs-on:  ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - run: flutter config --enable-web
+      - run: flutter pub get
+      - run: flutter pub run build_runner build
+      - run: flutter test
+      - run: flutter build web --web-renderer html --base-href /sketch/
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git --work-tree build/web add --all
+          git commit -m "Automatic deployment by github-actions"
+          git push origin HEAD:gh-pages --force
