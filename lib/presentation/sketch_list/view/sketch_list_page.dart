@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sketch/presentation/presentation.dart';
 
 class SketchListPage extends StatelessWidget {
@@ -13,12 +14,7 @@ class SketchListPage extends StatelessWidget {
       child: BlocListener<SketchListCubit, SketchListState>(
         listener: (context, state) {
           state.mapOrNull(created: (e) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SketchPage(sketch: e.sketch),
-              ),
-            );
+            context.go('/sketches/${e.sketch.id}');
           });
         },
         child: const SketchListView(),
@@ -110,12 +106,7 @@ class SketchItemView extends StatelessWidget {
             )
           : Text(sketch.title),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SketchPage(sketch: sketch),
-          ),
-        );
+        context.go('/sketches/${sketch.id}');
       },
     );
   }

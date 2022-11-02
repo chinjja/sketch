@@ -90,13 +90,16 @@ void main() {
       'emits [success] when sketch() is called.',
       build: () => bloc,
       setUp: () {
+        when(() => service.getById(sketch.id)).thenAnswer((_) async => sketch);
         when(() => stack.reset(sketch)).thenReturn(null);
       },
-      act: (bloc) => bloc.sketch(sketch),
+      act: (bloc) => bloc.sketch(sketch.id),
       expect: () => [
+        SketchState.loading(),
         SketchState.success(sketch: sketch),
       ],
       verify: (bloc) {
+        verify(() => service.getById(sketch.id)).called(1);
         verify(() => stack.reset(sketch)).called(1);
       },
     );

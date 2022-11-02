@@ -1,25 +1,25 @@
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sketch/presentation/presentation.dart';
 
 class SketchPage extends StatelessWidget {
-  final Sketch sketch;
-  const SketchPage({super.key, required this.sketch});
+  final String sketchId;
+  const SketchPage({super.key, required this.sketchId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => SketchCubit()
         ..started(context.read<SketchService>())
-        ..sketch(sketch),
+        ..sketch(sketchId),
       child: BlocListener<SketchCubit, SketchState>(
         listener: (context, state) {
           state.mapOrNull(deleted: (e) {
-            Navigator.pop(context);
+            context.pop();
           });
         },
         child: const SketchView(),

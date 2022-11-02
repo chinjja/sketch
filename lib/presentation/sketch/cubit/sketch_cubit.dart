@@ -48,14 +48,18 @@ class SketchCubit extends Cubit<SketchState> {
     _eraseSubscription = _eraseTask.listen((event) {});
   }
 
-  void sketch(Sketch sketch) {
+  void sketch(String sketchId) async {
+    emit(const SketchState.loading());
+    final sketch = await _service!.getById(sketchId);
     _stack.reset(sketch);
-    emit(
-      state.maybeMap(
-        success: (e) => e.copyWith(sketch: sketch),
-        orElse: () => SketchState.success(sketch: sketch),
-      ),
-    );
+    if (sketch != null) {
+      emit(
+        state.maybeMap(
+          success: (e) => e.copyWith(sketch: sketch),
+          orElse: () => SketchState.success(sketch: sketch),
+        ),
+      );
+    }
   }
 
   void _save() async {

@@ -8,6 +8,7 @@ enum SketchMode {
 @freezed
 class SketchState with _$SketchState {
   const factory SketchState.initial() = _Initial;
+  const factory SketchState.loading() = _Loading;
   const factory SketchState.success({
     @Default(false) bool canUndo,
     @Default(false) bool canRedo,
